@@ -459,7 +459,7 @@
 <script>
 // ── Constants ──
 const TYPE_COLORS  = { prose:'#378ADD', dialogue:'#D85A30', action:'#639922', thought:'#7F77DD', scene:'#D4537E' };
-const TYPE_LABELS  = { prose:'prose', dialogue:'dialogue', action:'action', thought:'internal thought', scene:'scene header' };
+const TYPE_LABELS  = { prose:'prose', dialogue:'dialogue', action:'action', thought:'thought', scene:'scene meta' };
 const PLACEHOLDERS = { prose:'Begin writing prose...', dialogue:'"Character speaks..."', action:'A character does something.', thought:'A character thinks...', scene:'Scene / Chapter heading' };
 const WIDTH_MAP    = { narrow:'540px', medium:'680px', wide:'860px' };
 const LH_MAP       = { tight:'1.5', normal:'1.75', airy:'2.1' };
@@ -579,8 +579,10 @@ function renderSidebar() {
     header.innerHTML = `
       <i class="ti ti-chevron-right coll-chevron"></i>
       <i class="ti ${coll.icon} coll-icon" style="color:var(--text2)"></i>
-      <div class="coll-name" title="Double-click to rename">${escHtml(coll.name)}</div>
+      <div class="coll-name" title="Right-click to rename">${escHtml(coll.name)}</div>
       <div class="coll-actions">
+        <button class="chap-btn" title="Move up" onclick="moveCollection(${coll.id},-1)"><i class="ti ti-chevron-up"></i></button>
+        <button class="chap-btn" title="Move down" onclick="moveCollection(${coll.id},1)"><i class="ti ti-chevron-down"></i></button>
         <button class="coll-btn" title="Add chapter" onclick="addChapter(${coll.id})"><i class="ti ti-plus"></i></button>
         <button class="coll-btn danger" title="Delete collection" onclick="deleteCollection(${coll.id})"><i class="ti ti-trash"></i></button>
       </div>`;
@@ -609,7 +611,7 @@ function renderSidebar() {
       item.dataset.id = ch.id;
       item.innerHTML = `
         <i class="ti ti-file-text chap-icon"></i>
-        <div class="chap-name" title="Double-click to rename">${escHtml(ch.name)}</div>
+        <div class="chap-name" title="Right-click to rename">${escHtml(ch.name)}</div>
         <div class="chap-actions">
           <button class="chap-btn" title="Move up" onclick="moveChapter(${coll.id},${ch.id},-1)"><i class="ti ti-chevron-up"></i></button>
           <button class="chap-btn" title="Move down" onclick="moveChapter(${coll.id},${ch.id},1)"><i class="ti ti-chevron-down"></i></button>
@@ -694,6 +696,14 @@ function deleteCollection(id) {
     if(first) { activeChapterId=first.id; activeCollId=collections.find(c=>c.chapters.some(ch=>ch.id===first.id))?.id; }
   }
   renderSidebar(); render(); save();
+}
+
+function moveCollection(collId, dir) {
+  const i = collections.findIndex(ch=>ch.id===collId);
+  const ni = i+dir;
+  if(ni<0||ni>=collections.length) return;
+  [collections[i],collections[ni]] = [collections[ni],collections[i]];
+  renderSidebar(); save();
 }
 
 function addChapter(collId) {
