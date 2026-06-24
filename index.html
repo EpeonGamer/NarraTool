@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrative Writer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff; --bg2: #f7f7f5; --bg3: #f0efec;
+    --text: #1a1a18; --text2: #6b6b65; --text3: #9b9b94;
+    --border: rgba(0,0,0,0.1); --border2: rgba(0,0,0,0.18);
+    --radius: 10px; --radius-sm: 6px;
+    --sans: 'Inter', system-ui, sans-serif; --serif: 'Lora', Georgia, serif;
+    --prose-accent: #378ADD; --dialogue-accent: #D85A30;
+    --action-accent: #639922; --thought-accent: #7F77DD; --scene-accent: #D4537E;
+  }
+  [data-theme="dark"] {
+    --bg: #1c1c1a; --bg2: #242422; --bg3: #2c2c2a;
+    --text: #e8e8e2; --text2: #9a9a94; --text3: #6a6a64;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
+    --prose-accent: #85B7EB; --dialogue-accent: #F0997B;
+    --action-accent: #97C459; --thought-accent: #AFA9EC; --scene-accent: #ED93B1;
+  }
+
+  html, body { height: 100%; background: var(--bg3); color: var(--text); font-family: var(--sans); }
+  #shell { display: flex; height: 100vh; }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: 240px; flex-shrink: 0; background: var(--bg);
+    border-right: 0.5px solid var(--border); display: flex; flex-direction: column;
+    transition: width 0.25s; overflow: hidden;
+  }
+  #sidebar.collapsed { width: 48px; }
+  #sidebar.collapsed .hide-collapsed { display: none !important; }
+  #sidebar.collapsed #collapse-btn i { transform: rotate(180deg); }
+
+  #sidebar-top {
+    padding: 0 12px; height: 48px; border-bottom: 0.5px solid var(--border);
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  #project-name {
+    font-size: 13px; font-weight: 500; color: var(--text); flex: 1;
+    border: none; background: transparent; outline: none; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  #project-name:focus { color: var(--prose-accent); }
+  #collapse-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 2px; flex-shrink: 0; }
+  #collapse-btn:hover { color: var(--text); }
+  #collapse-btn i { transition: transform 0.25s; display: block; }
+
+  /* ── Collections & chapters ── */
+  #sidebar-chapters { flex: 1; overflow-y: auto; padding: 6px 0; }
+
+  /* Top-level add-collection row */
+  .collections-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 12px 6px; margin-top: 2px;
+  }
+  .sec-title { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); }
+  .sec-add {
+    width: 18px; height: 18px; border-radius: 50%; border: 0.5px solid var(--border2);
+    background: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text3); font-size: 11px; transition: background 0.1s, color 0.1s; flex-shrink: 0;
+  }
+  .sec-add:hover { background: var(--bg2); color: var(--text); }
+
+  /* Collection group */
+  .collection-group { margin-bottom: 2px; }
+  .collection-header {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 12px 5px 10px; cursor: pointer;
+    transition: background 0.15s; user-select: none;
+  }
+  .collection-header:hover { background: var(--bg2); }
+  .coll-chevron { font-size: 11px; color: var(--text3); transition: transform 0.2s; flex-shrink: 0; }
+  .collection-group.open .coll-chevron { transform: rotate(90deg); }
+  .coll-icon { font-size: 14px; flex-shrink: 0; }
+  .coll-name {
+    font-size: 13px; font-weight: 500; color: var(--text2); flex: 1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    border: none; background: transparent; outline: none; font-family: var(--sans);
+  }
+  .coll-name:focus { color: var(--text); }
+  .coll-actions { display: none; gap: 2px; flex-shrink: 0; }
+  .collection-header:hover .coll-actions { display: flex; }
+  .coll-btn {
+    width: 18px; height: 18px; border-radius: 4px; border: none;
+    background: none; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; color: var(--text3); font-size: 11px;
+    transition: background 0.1s, color 0.1s;
+  }
+  .coll-btn:hover { background: var(--bg3); color: var(--text); }
+  .coll-btn.danger:hover { color: #993C1D; background: #FAECE7; }
+
+  .collection-chapters { display: none; }
+  .collection-group.open .collection-chapters { display: block; }
+
+  /* Chapter items (indented under collection) */
+  .chapter-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px 5px 26px; cursor: pointer;
+    border-left: 2px solid transparent; transition: background 0.15s; position: relative;
+  }
+  .chapter-item:hover { background: var(--bg2); }
+  .chapter-item.active { background: var(--bg2); border-left-color: var(--prose-accent); }
+  .chapter-item.active .chap-name { color: var(--text); font-weight: 500; }
+  .chap-icon { font-size: 12px; color: var(--text3); flex-shrink: 0; }
+  .chap-name {
+    font-size: 13px; color: var(--text2); flex: 1; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+    border: none; background: transparent; outline: none; cursor: pointer;
+    padding: 0; font-family: var(--sans);
+  }
+  .chap-name:focus { color: var(--text); cursor: text; }
+  .chap-actions { display: none; gap: 2px; }
+  .chapter-item:hover .chap-actions { display: flex; }
+  .chap-btn {
+    width: 18px; height: 18px; border-radius: 4px; border: none;
+    background: none; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; color: var(--text3); font-size: 11px;
+    transition: background 0.1s, color 0.1s;
+  }
+  .chap-btn:hover { background: var(--bg3); color: var(--text); }
+  .chap-btn.danger:hover { color: #993C1D; background: #FAECE7; }
+
+  /* Add chapter inside collection */
+  .add-chapter-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 12px 6px 26px; cursor: pointer; color: var(--text3);
+    font-size: 12px; transition: color 0.15s;
+  }
+  .add-chapter-row:hover { color: var(--text); }
+  .add-chapter-row i { font-size: 12px; }
+
+  /* Sidebar stats */
+  #sidebar-bottom-area { border-top: 0.5px solid var(--border); padding: 10px 0 0; flex-shrink: 0; }
+  .stat-section { padding: 6px 12px 8px; }
+  .stat-section .sec-title { display: block; margin-bottom: 6px; }
+  #beat-map { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; }
+  .beat-dot { width: 9px; height: 9px; border-radius: 50%; cursor: pointer; transition: transform 0.1s; }
+  .beat-dot:hover { transform: scale(1.4); }
+  .stat-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .stat-label { font-size: 11px; color: var(--text3); }
+  .stat-val { font-size: 13px; font-weight: 500; color: var(--text); }
+  .stat-total { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  .side-btn {
+    display: flex; align-items: center; gap: 10px; padding: 5px 12px;
+    font-size: 13px; color: var(--text2); cursor: pointer;
+    border: none; background: none; width: 100%; text-align: left;
+    transition: background 0.15s, color 0.15s;
+  }
+  .side-btn:hover { background: var(--bg2); color: var(--text); }
+  .side-btn i { font-size: 15px; flex-shrink: 0; }
+  .side-label { flex: 1; }
+
+  /* ── Main ── */
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  #topbar {
+    height: 48px; background: var(--bg); border-bottom: 0.5px solid var(--border);
+    display: flex; align-items: center; gap: 6px; padding: 0 14px; flex-shrink: 0;
+  }
+  .tb-group { display: flex; align-items: center; gap: 3px; }
+  .tb-sep { width: 0.5px; height: 20px; background: var(--border2); margin: 0 4px; }
+  .tb-btn {
+    font-size: 12px; padding: 4px 9px; border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm); background: transparent; color: var(--text2);
+    cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap;
+  }
+  .tb-btn:hover { background: var(--bg2); color: var(--text); }
+  .tb-btn.active { background: #E6F1FB; color: #185FA5; border-color: #B5D4F4; }
+  [data-theme="dark"] .tb-btn.active { background: #0C447C; color: #B5D4F4; border-color: #378ADD; }
+  .tb-btn i { font-size: 14px; vertical-align: -2px; }
+  #topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  #chap-title-display { font-size: 13px; color: var(--text2); max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #prog-wrap { width: 70px; height: 3px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+  #prog { height: 100%; background: linear-gradient(90deg, #B5D4F4, #CECBF6); border-radius: 2px; transition: width 0.5s; width: 0%; }
+
+  /* ── Content ── */
+  #content-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  #writing-area { flex: 1; overflow-y: auto; padding: 2rem 0; background: var(--bg3); }
+  #editor { max-width: 680px; margin: 0 auto; padding: 0 1rem; }
+
+  /* Notes panel */
+  #notes-panel {
+    flex-shrink: 0; background: var(--bg); border-top: 0.5px solid var(--border);
+    display: none; flex-direction: column; height: 220px;
+  }
+  #notes-panel.open { display: flex; }
+  #notes-header {
+    height: 36px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; border-bottom: 0.5px solid var(--border); flex-shrink: 0;
+  }
+  #notes-header span { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); }
+  #notes-close { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 14px; }
+  #notes-close:hover { color: var(--text); }
+  #notes-body { flex: 1; overflow-y: auto; padding: 12px 14px; }
+  #notes-ta {
+    width: 100%; height: 100%; border: none; background: transparent; outline: none;
+    font-family: var(--sans); font-size: 13px; line-height: 1.65; color: var(--text); resize: none;
+  }
+  #notes-ta::placeholder { color: var(--text3); }
+
+  /* ── Blocks ── */
+  .block-wrap { position: relative; padding-left: 50px; transition: opacity 0.15s; }
+  .block-gutter {
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    height: 100%; display: flex; align-items: center;
+    justify-content: center; opacity: 0; transition: opacity 0.2s;
+  }
+  .block-wrap:hover .block-gutter { opacity: 1; }
+  .gutter-inner { display: flex; flex-direction: column; gap: 3px; align-items: center;
+    flex-wrap: wrap; height: 100%; justify-content: center; }
+  .gutter-btn {
+    width: 22px; height: 22px; border-radius: 50%; border: 0.5px solid var(--border2);
+    background: var(--bg); cursor: pointer; display: flex; align-items: center;
+    justify-content: center; color: var(--text3); font-size: 11px;
+    transition: background 0.1s, color 0.1s;
+  }
+  .gutter-btn:hover { background: var(--bg2); color: var(--text); }
+  .drag-handle {
+    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; color: var(--text3); font-size: 12px;
+    cursor: grab; transition: color 0.1s; user-select: none; touch-action: none;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .drag-handle:hover { color: var(--text); }
+  .block-content { min-width: 0; }
+  .block-wrap.dragging { opacity: 0.3; }
+  .drop-zone {
+    height: 4px; border-radius: 2px; margin: 0 0 0 36px;
+    background: transparent; transition: background 0.15s; pointer-events: none;
+  }
+  .drop-zone.active { background: var(--prose-accent); }
+  .block-inner {
+    padding: 10px 16px; border-radius: var(--radius);
+    transition: background 0.2s; border-left: 3px solid transparent; background: var(--bg);
+  }
+  .block-wrap:hover .block-inner { filter: brightness(0.98); }
+  [data-theme="dark"] .block-wrap:hover .block-inner { filter: brightness(1.05); }
+  .block-label { font-size: 10px; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 5px; opacity: 0.55; }
+  .block-inner [contenteditable] { outline: none; min-height: 1.5em; }
+  .block-inner [contenteditable]:empty::before { content: attr(data-placeholder); color: var(--text3); pointer-events: none; }
+
+  .type-prose .block-inner { border-left-color: var(--prose-accent); }
+  .type-prose .block-label { color: var(--prose-accent); }
+  .type-prose [contenteditable] { font-family: var(--serif); font-size: 17px; line-height: 1.8; color: var(--text); }
+  .type-dialogue .block-inner { border-left-color: var(--dialogue-accent); }
+  .type-dialogue .block-label { color: var(--dialogue-accent); }
+  .type-dialogue [contenteditable] { font-family: var(--serif); font-size: 17px; line-height: 1.75; color: var(--text); font-style: italic; padding-left: 10px; }
+  .type-action .block-inner { border-left-color: var(--action-accent); }
+  .type-action .block-label { color: var(--action-accent); }
+  .type-action [contenteditable] { font-size: 16px; line-height: 1.65; color: var(--text); font-weight: 500; }
+  .type-thought .block-inner { border-left-color: var(--thought-accent); padding-left: 28px; }
+  .type-thought .block-label { color: var(--thought-accent); }
+  .type-thought [contenteditable] { font-family: var(--serif); font-size: 16px; line-height: 1.75; color: var(--text2); font-style: italic; }
+  .type-scene .block-inner { border-left-color: var(--scene-accent); padding-top: 14px; padding-bottom: 14px; }
+  .type-scene .block-label { color: var(--scene-accent); }
+  .type-scene [contenteditable] { font-size: 13px; line-height: 1.5; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; }
+
+  #editor.focus-mode .block-wrap { transition: opacity 0.25s; }
+  #editor.focus-mode .block-wrap:not(.block-focused) { opacity: 0.22; }
+
+  /* Add bar */
+  #add-bar { display: flex; gap: 6px; margin-top: 1rem; flex-wrap: wrap; align-items: center; }
+  #add-bar span { font-size: 12px; color: var(--text3); }
+  .add-btn {
+    font-size: 12px; padding: 4px 10px; border: 0.5px dashed var(--border2);
+    border-radius: var(--radius-sm); background: transparent; color: var(--text2);
+    cursor: pointer; transition: background 0.15s, color 0.15s; display: flex; align-items: center; gap: 4px;
+  }
+  .add-btn:hover { background: var(--bg); color: var(--text); }
+  .add-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* Type picker */
+  #type-picker {
+    position: fixed; background: var(--bg); border: 0.5px solid var(--border2);
+    border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    padding: 6px; z-index: 200; display: none; flex-direction: column; gap: 2px; min-width: 160px;
+  }
+  #type-picker.open { display: flex; }
+  .type-opt {
+    padding: 7px 12px; border-radius: var(--radius-sm); font-size: 13px;
+    cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--text2);
+    border: none; background: none; text-align: left; width: 100%;
+  }
+  .type-opt:hover { background: var(--bg2); color: var(--text); }
+  .type-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* Settings panel */
+  #settings-panel {
+    position: fixed; top: 48px; right: 0; width: 260px; background: var(--bg);
+    border-left: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border);
+    border-radius: 0 0 0 var(--radius); padding: 1.25rem 1rem;
+    z-index: 150; display: none; flex-direction: column; gap: 1.25rem;
+    box-shadow: -4px 4px 16px rgba(0,0,0,0.06);
+  }
+  #settings-panel.open { display: flex; }
+  .setting-group { display: flex; flex-direction: column; gap: 8px; }
+  .setting-label { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); }
+  .setting-row { display: flex; align-items: center; gap: 10px; }
+  .setting-row input[type=range] { flex: 1; }
+  .setting-val { font-size: 12px; color: var(--text2); min-width: 32px; text-align: right; }
+  .seg-group { display: flex; gap: 4px; }
+  .seg-btn {
+    flex: 1; font-size: 12px; padding: 5px 0; border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm); background: transparent; color: var(--text2);
+    cursor: pointer; transition: background 0.15s, color 0.15s; text-align: center;
+  }
+  .seg-btn:hover { background: var(--bg2); color: var(--text); }
+  .seg-btn.active { background: var(--bg3); color: var(--text); font-weight: 500; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--text); color: var(--bg); font-size: 13px; padding: 8px 18px;
+    border-radius: 20px; transition: transform 0.3s; z-index: 300; pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  #writing-area::-webkit-scrollbar { width: 6px; }
+  #writing-area::-webkit-scrollbar-track { background: transparent; }
+  #writing-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    #sidebar { display: none; }
+    #editor { padding: 0 0.5rem; }
+    #settings-panel { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside id="sidebar">
+    <div id="sidebar-top">
+      <input id="project-name" class="hide-collapsed" value="Untitled Story" title="Click to rename" />
+      <button id="collapse-btn" title="Collapse sidebar" onclick="toggleSidebar()">
+        <i class="ti ti-layout-sidebar-left-collapse"></i>
+      </button>
+    </div>
+
+    <div id="sidebar-chapters">
+      <div class="collections-header hide-collapsed">
+        <span class="sec-title">Collections</span>
+        <button class="sec-add" title="Add collection" onclick="addCollection()"><i class="ti ti-plus"></i></button>
+      </div>
+      <div id="collection-list"></div>
+    </div>
+
+    <div id="sidebar-bottom-area">
+      <div class="stat-section hide-collapsed">
+        <span class="sec-title">This chapter</span>
+        <div id="beat-map"></div>
+        <div class="stat-row"><span class="stat-label">Words</span><span class="stat-val" id="wc">0</span></div>
+        <div class="stat-row"><span class="stat-label">Blocks</span><span class="stat-val" id="bc">0</span></div>
+        <div class="stat-row"><span class="stat-label">Read time</span><span class="stat-val" id="rt">0 min</span></div>
+        <div class="stat-total" id="total-wc"></div>
+      </div>
+      <button class="side-btn" onclick="toggleNotes()"><i class="ti ti-notes"></i><span class="side-label hide-collapsed">Chapter notes</span></button>
+      <button class="side-btn" onclick="exportTxt()"><i class="ti ti-download"></i><span class="side-label hide-collapsed">Export .txt</span></button>
+      <button class="side-btn" onclick="exportJson()"><i class="ti ti-braces"></i><span class="side-label hide-collapsed">Export .json</span></button>
+      <button class="side-btn" onclick="importJson()"><i class="ti ti-upload"></i><span class="side-label hide-collapsed">Import .json</span></button>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main id="main">
+    <div id="topbar">
+      <div class="tb-group">
+        <button class="tb-btn active" id="view-normal" onclick="setView('normal')">Normal</button>
+        <button class="tb-btn" id="view-focus" onclick="setView('focus')">Focus</button>
+        <button class="tb-btn" id="view-clean" onclick="setView('clean')">Clean</button>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="tb-group">
+        <button class="tb-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle dark mode"><i class="ti ti-moon"></i></button>
+        <button class="tb-btn" onclick="toggleSettings()" id="settings-btn" title="Settings"><i class="ti ti-adjustments-horizontal"></i></button>
+      </div>
+      <div id="topbar-right">
+        <span id="chap-title-display"></span>
+        <div id="prog-wrap"><div id="prog"></div></div>
+      </div>
+    </div>
+
+    <div id="content-area">
+      <div id="writing-area">
+        <div id="editor">
+          <div id="add-bar">
+            <span>Add:</span>
+            <button class="add-btn" onclick="addBlock('prose')"><span class="add-dot" style="background:var(--prose-accent)"></span>prose</button>
+            <button class="add-btn" onclick="addBlock('dialogue')"><span class="add-dot" style="background:var(--dialogue-accent)"></span>dialogue</button>
+            <button class="add-btn" onclick="addBlock('action')"><span class="add-dot" style="background:var(--action-accent)"></span>action</button>
+            <button class="add-btn" onclick="addBlock('thought')"><span class="add-dot" style="background:var(--thought-accent)"></span>thought</button>
+            <button class="add-btn" onclick="addBlock('scene')"><span class="add-dot" style="background:var(--scene-accent)"></span>scene</button>
+          </div>
+        </div>
+      </div>
+      <div id="notes-panel">
+        <div id="notes-header">
+          <span>Chapter notes</span>
+          <button id="notes-close" onclick="toggleNotes()" title="Close notes"><i class="ti ti-x"></i></button>
+        </div>
+        <div id="notes-body">
+          <textarea id="notes-ta" placeholder="Notes, reminders, character details for this chapter..."></textarea>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Type picker -->
+<div id="type-picker">
+  <button class="type-opt" onclick="changeType('prose')"><span class="type-dot" style="background:var(--prose-accent)"></span>Prose</button>
+  <button class="type-opt" onclick="changeType('dialogue')"><span class="type-dot" style="background:var(--dialogue-accent)"></span>Dialogue</button>
+  <button class="type-opt" onclick="changeType('action')"><span class="type-dot" style="background:var(--action-accent)"></span>Action</button>
+  <button class="type-opt" onclick="changeType('thought')"><span class="type-dot" style="background:var(--thought-accent)"></span>Thought</button>
+  <button class="type-opt" onclick="changeType('scene')"><span class="type-dot" style="background:var(--scene-accent)"></span>Scene</button>
+</div>
+
+<!-- Settings panel -->
+<div id="settings-panel">
+  <div class="setting-group">
+    <div class="setting-label">Font size</div>
+    <div class="setting-row">
+      <input type="range" id="font-size-slider" min="13" max="22" step="1" value="17" oninput="applyFontSize(this.value)">
+      <span class="setting-val" id="font-size-val">17px</span>
+    </div>
+  </div>
+  <div class="setting-group">
+    <div class="setting-label">Paragraph width</div>
+    <div class="seg-group">
+      <button class="seg-btn" id="width-narrow" onclick="applyWidth('narrow')">Narrow</button>
+      <button class="seg-btn active" id="width-medium" onclick="applyWidth('medium')">Medium</button>
+      <button class="seg-btn" id="width-wide" onclick="applyWidth('wide')">Wide</button>
+    </div>
+  </div>
+  <div class="setting-group">
+    <div class="setting-label">Line height</div>
+    <div class="seg-group">
+      <button class="seg-btn" id="lh-tight" onclick="applyLineHeight('tight')">Tight</button>
+      <button class="seg-btn active" id="lh-normal" onclick="applyLineHeight('normal')">Normal</button>
+      <button class="seg-btn" id="lh-airy" onclick="applyLineHeight('airy')">Airy</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Constants ──
+const TYPE_COLORS  = { prose:'#378ADD', dialogue:'#D85A30', action:'#639922', thought:'#7F77DD', scene:'#D4537E' };
+const TYPE_LABELS  = { prose:'prose', dialogue:'dialogue', action:'action', thought:'internal thought', scene:'scene header' };
+const PLACEHOLDERS = { prose:'Begin writing prose...', dialogue:'"Character speaks..."', action:'A character does something.', thought:'A character thinks...', scene:'Scene / Chapter heading' };
+const WIDTH_MAP    = { narrow:'540px', medium:'680px', wide:'860px' };
+const LH_MAP       = { tight:'1.5', normal:'1.75', airy:'2.1' };
+// Default icons per collection (cycles through on creation)
+const COLL_ICONS   = ['ti-books','ti-users','ti-map','ti-bulb','ti-clipboard','ti-planet','ti-sword','ti-flask'];
+
+// ── State ──
+// collections: [{id, name, icon, open, chapters:[{id, name, blocks:[{id,type,text}], notes}]}]
+let collections      = [];
+let activeChapterId  = null;
+let activeCollId     = null;
+let nextCollId       = 0;
+let nextChapterId    = 0;
+let nextBlockId      = 0;
+let viewMode         = 'normal';
+let showLabels       = true;
+let focusedId        = null;
+let pickerTargetId   = null;
+let saveTimer        = null;
+let dragId           = null;
+let dragOverIndex    = null;
+let settings         = { fontSize:17, width:'medium', lineHeight:'normal' };
+
+// ── Helpers ──
+function allChapters() { return collections.flatMap(c => c.chapters); }
+function activeChapter() { return allChapters().find(ch => ch.id === activeChapterId); }
+function activeCollection() { return collections.find(c => c.id === activeCollId); }
+function blocks() { const ch = activeChapter(); return ch ? ch.blocks : []; }
+
+function save() {
+  localStorage.setItem('nw-collections', JSON.stringify(collections));
+  localStorage.setItem('nw-active-ch', activeChapterId);
+  localStorage.setItem('nw-active-coll', activeCollId);
+  localStorage.setItem('nw-name', document.getElementById('project-name').value);
+}
+function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(save, 800); }
+
+// ── Init ──
+function init() {
+  loadSettings();
+  const saved = localStorage.getItem('nw-collections');
+  if (saved) {
+    try {
+      collections = JSON.parse(saved);
+      activeChapterId = parseInt(localStorage.getItem('nw-active-ch')) || allChapters()[0]?.id;
+      activeCollId    = parseInt(localStorage.getItem('nw-active-coll')) || collections[0]?.id;
+      nextCollId      = Math.max(...collections.map(c=>c.id)) + 1;
+      nextChapterId   = Math.max(...allChapters().map(ch=>ch.id), 0) + 1;
+      nextBlockId     = Math.max(...allChapters().flatMap(ch=>ch.blocks.map(b=>b.id)), 0) + 1;
+    } catch(e) { loadSample(); }
+  } else { loadSample(); }
+
+  const savedName = localStorage.getItem('nw-name');
+  if (savedName) document.getElementById('project-name').value = savedName;
+  const theme = localStorage.getItem('nw-theme');
+  if (theme === 'dark') document.documentElement.dataset.theme = 'dark';
+  updateThemeBtn();
+
+  renderSidebar();
+  render();
+  applyAllSettings();
+  initDrag();
+
+  document.getElementById('project-name').addEventListener('input', scheduleSave);
+  document.getElementById('notes-ta').addEventListener('input', () => {
+    const ch = activeChapter(); if(ch) ch.notes = document.getElementById('notes-ta').value;
+    scheduleSave();
+  });
+}
+
+function loadSample() {
+  const sampleBlocks = [
+    {type:'scene',    text:'Chapter one — the morning of the last ordinary day'},
+    {type:'prose',    text:'The kitchen smelled of burnt coffee and something else — something that hadn\'t been there the week before. Mara stood at the window, watching the fog roll in off the harbour, her fingers wrapped around a mug that had long since gone cold.'},
+    {type:'action',   text:'She set it down without drinking.'},
+    {type:'dialogue', text:'"You\'re staring again," said Eli from the doorway. He didn\'t look up from his phone.'},
+    {type:'prose',    text:'Outside, a heron picked its way along the dock, deliberate as a surgeon. It had been there every morning for three years. She\'d never once seen it catch anything.'},
+    {type:'thought',  text:'Maybe that was the whole point. Maybe patience was the thing she\'d been misreading all along.'},
+    {type:'dialogue', text:'"Mara." His voice was softer this time.'},
+    {type:'action',   text:'She turned. He was looking at her now — really looking — and his phone was face-down on the counter.'},
+    {type:'prose',    text:'Whatever she had been about to say dissolved somewhere between her chest and her teeth. The fog had reached the window. The heron was gone.'},
+  ].map((b,i) => ({...b, id:i}));
+  nextBlockId = sampleBlocks.length;
+
+  collections = [{
+    id: 0, name: 'My Novel', icon: 'ti-books', open: true,
+    chapters: [
+      { id:0, name:'Chapter 1', blocks: sampleBlocks, notes:'' },
+      { id:1, name:'Chapter 2', blocks: [], notes:'' },
+    ]
+  }, {
+    id: 1, name: 'Characters', icon: 'ti-users', open: false,
+    chapters: [
+      { id:2, name:'Mara', blocks: [], notes:'' },
+      { id:3, name:'Eli',  blocks: [], notes:'' },
+    ]
+  }];
+  nextCollId    = 2;
+  nextChapterId = 4;
+  activeCollId  = 0;
+  activeChapterId = 0;
+}
+
+// ── Sidebar ──
+function renderSidebar() {
+  const list = document.getElementById('collection-list');
+  list.innerHTML = '';
+
+  collections.forEach(coll => {
+    const group = document.createElement('div');
+    group.className = 'collection-group' + (coll.open ? ' open' : '');
+    group.dataset.id = coll.id;
+
+    // Collection header
+    const header = document.createElement('div');
+    header.className = 'collection-header hide-collapsed';
+    header.innerHTML = `
+      <i class="ti ti-chevron-right coll-chevron"></i>
+      <i class="ti ${coll.icon} coll-icon" style="color:var(--text2)"></i>
+      <div class="coll-name" title="Double-click to rename">${escHtml(coll.name)}</div>
+      <div class="coll-actions">
+        <button class="coll-btn" title="Add chapter" onclick="addChapter(${coll.id})"><i class="ti ti-plus"></i></button>
+        <button class="coll-btn danger" title="Delete collection" onclick="deleteCollection(${coll.id})"><i class="ti ti-trash"></i></button>
+      </div>`;
+    header.querySelector('.coll-chevron').addEventListener('click', e => { e.stopPropagation(); toggleCollection(coll.id); });
+    header.querySelector('.ti-chevron-right')?.parentElement; // chevron handled above
+    header.addEventListener('click', e => {
+      if(e.target.closest('.coll-btn') || e.target.closest('.coll-name[contenteditable="true"]')) return;
+      toggleCollection(coll.id);
+    });
+    header.querySelector('.coll-name').addEventListener('contextmenu', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      startRenameEl(header.querySelector('.coll-name'), val => {
+        coll.name = val || coll.name;
+        renderSidebar(); save();
+      });
+    });
+
+    // Chapters inside collection
+    const chapList = document.createElement('div');
+    chapList.className = 'collection-chapters hide-collapsed';
+
+    coll.chapters.forEach(ch => {
+      const item = document.createElement('div');
+      item.className = 'chapter-item' + (ch.id === activeChapterId ? ' active' : '');
+      item.dataset.id = ch.id;
+      item.innerHTML = `
+        <i class="ti ti-file-text chap-icon"></i>
+        <div class="chap-name" title="Double-click to rename">${escHtml(ch.name)}</div>
+        <div class="chap-actions">
+          <button class="chap-btn" title="Move up" onclick="moveChapter(${coll.id},${ch.id},-1)"><i class="ti ti-chevron-up"></i></button>
+          <button class="chap-btn" title="Move down" onclick="moveChapter(${coll.id},${ch.id},1)"><i class="ti ti-chevron-down"></i></button>
+          <button class="chap-btn danger" title="Delete" onclick="deleteChapter(${coll.id},${ch.id})"><i class="ti ti-trash"></i></button>
+        </div>`;
+      item.addEventListener('click', e => {
+        if(e.target.closest('.chap-btn') || e.target.closest('.chap-name[contenteditable="true"]')) return;
+        switchChapter(coll.id, ch.id);
+      });
+      item.querySelector('.chap-name').addEventListener('contextmenu', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        startRenameEl(item.querySelector('.chap-name'), val => {
+          ch.name = val || ch.name;
+          renderSidebar(); updateChapTitle(); save();
+        });
+      });
+      chapList.appendChild(item);
+    });
+
+    // Add chapter row
+    const addRow = document.createElement('div');
+    addRow.className = 'add-chapter-row hide-collapsed';
+    addRow.innerHTML = `<i class="ti ti-plus"></i><span>Add chapter</span>`;
+    addRow.onclick = () => addChapter(coll.id);
+    chapList.appendChild(addRow);
+
+    group.appendChild(header);
+    group.appendChild(chapList);
+    list.appendChild(group);
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function startRenameEl(el, onDone) {
+  el.contentEditable = 'true';
+  el.focus();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  const finish = () => {
+    el.contentEditable = 'false';
+    onDone(el.textContent.trim());
+  };
+  el.addEventListener('blur', finish, {once:true});
+  el.addEventListener('keydown', e => { if(e.key==='Enter'){e.preventDefault(); el.blur();} }, {once:true});
+}
+
+function toggleCollection(id) {
+  const coll = collections.find(c=>c.id===id);
+  if(coll) { coll.open = !coll.open; renderSidebar(); save(); }
+}
+
+function addCollection() {
+  const icon = COLL_ICONS[collections.length % COLL_ICONS.length];
+  const firstChap = { id: nextChapterId++, name: 'Chapter 1', blocks: [], notes: '' };
+  const coll = { id: nextCollId++, name: 'New Collection', icon, open: true, chapters: [firstChap] };
+  collections.push(coll);
+  switchChapter(coll.id, firstChap.id);
+  save();
+  // Focus the new collection name
+  setTimeout(() => {
+    const groups = document.querySelectorAll('.collection-group');
+    const last = groups[groups.length-1];
+    if(last) {
+      const el = last.querySelector('.coll-name');
+      if(el) startRenameEl(el, val => { coll.name = val || coll.name; renderSidebar(); save(); });
+    }
+  }, 50);
+}
+
+function deleteCollection(id) {
+  if(collections.length === 1) { toast("Can't delete the only collection"); return; }
+  collections = collections.filter(c=>c.id!==id);
+  // If active chapter was in this collection, switch to first available
+  if(!allChapters().find(ch=>ch.id===activeChapterId)) {
+    const first = allChapters()[0];
+    if(first) { activeChapterId=first.id; activeCollId=collections.find(c=>c.chapters.some(ch=>ch.id===first.id))?.id; }
+  }
+  renderSidebar(); render(); save();
+}
+
+function addChapter(collId) {
+  const coll = collections.find(c=>c.id===collId); if(!coll) return;
+  const ch = { id: nextChapterId++, name: 'New Chapter', blocks: [], notes: '' };
+  coll.chapters.push(ch);
+  coll.open = true;
+  switchChapter(collId, ch.id);
+  save();
+  setTimeout(() => {
+    const item = document.querySelector(`.chapter-item[data-id="${ch.id}"]`);
+    if(item) {
+      const el = item.querySelector('.chap-name');
+      if(el) startRenameEl(el, val => { ch.name = val || ch.name; renderSidebar(); updateChapTitle(); save(); });
+    }
+  }, 60);
+}
+
+function deleteChapter(collId, chapId) {
+  const coll = collections.find(c=>c.id===collId); if(!coll) return;
+  if(allChapters().length === 1) { toast("Can't delete the only chapter"); return; }
+  coll.chapters = coll.chapters.filter(ch=>ch.id!==chapId);
+  if(activeChapterId === chapId) {
+    const next = allChapters()[0];
+    if(next) { const nc = collections.find(c=>c.chapters.some(ch=>ch.id===next.id)); switchChapter(nc.id, next.id); }
+  }
+  renderSidebar(); save();
+}
+
+function moveChapter(collId, chapId, dir) {
+  const coll = collections.find(c=>c.id===collId); if(!coll) return;
+  const i = coll.chapters.findIndex(ch=>ch.id===chapId);
+  const ni = i+dir;
+  if(ni<0||ni>=coll.chapters.length) return;
+  [coll.chapters[i],coll.chapters[ni]] = [coll.chapters[ni],coll.chapters[i]];
+  renderSidebar(); save();
+}
+
+function switchChapter(collId, chapId) {
+  const cur = activeChapter();
+  if(cur) cur.notes = document.getElementById('notes-ta').value;
+  activeCollId    = collId;
+  activeChapterId = chapId;
+  renderSidebar();
+  render();
+  const ch = activeChapter();
+  document.getElementById('notes-ta').value = ch ? (ch.notes||'') : '';
+  updateChapTitle();
+  save();
+}
+
+function updateChapTitle() {
+  const ch = activeChapter();
+  const coll = activeCollection();
+  document.getElementById('chap-title-display').textContent = ch ? (coll ? coll.name+' · '+ch.name : ch.name) : '';
+}
+
+// ── Render blocks ──
+function render() {
+  const editor = document.getElementById('editor');
+  const addBar = document.getElementById('add-bar');
+  editor.innerHTML = '';
+
+  const bs = blocks();
+  bs.forEach((b, i) => {
+    const dz = document.createElement('div');
+    dz.className = 'drop-zone'; dz.dataset.dropIndex = i;
+    editor.appendChild(dz);
+
+    const wrap = document.createElement('div');
+    wrap.className = `block-wrap type-${b.type}${focusedId===b.id?' block-focused':''}`;
+    wrap.dataset.id = b.id;
+
+    const gutter = document.createElement('div');
+    gutter.className = 'block-gutter';
+    gutter.innerHTML = `<div class="gutter-inner">
+      <div class="drag-handle" title="Drag to reorder" data-drag="${b.id}"><i class="ti ti-grip-vertical"></i></div>
+      <button class="gutter-btn" title="Delete block" onclick="deleteBlock(${b.id})"><i class="ti ti-trash"></i></button>
+      <button class="gutter-btn" title="Change type" onclick="openPicker(event,${b.id})"><i class="ti ti-dots"></i></button>
+      <button class="gutter-btn" title="Add block below" onclick="addBlock('${b.type}',${i+1})"><i class="ti ti-plus"></i></button>
+    </div>`;
+
+    const content = document.createElement('div');
+    content.className = 'block-content';
+    const inner = document.createElement('div');
+    inner.className = 'block-inner';
+    const label = document.createElement('div');
+    label.className = 'block-label';
+    label.textContent = TYPE_LABELS[b.type];
+    label.style.display = showLabels ? 'block' : 'none';
+    const p = document.createElement('div');
+    p.contentEditable = 'true';
+    p.setAttribute('data-placeholder', PLACEHOLDERS[b.type]);
+    p.spellcheck = true;
+    p.textContent = b.text;
+    p.addEventListener('input', () => { b.text = p.textContent; scheduleSave(); updateStats(); });
+    p.addEventListener('focus', () => { focusedId = b.id; if(viewMode==='focus') refreshFocusClasses(); });
+    p.addEventListener('blur',  () => { b.text = p.textContent; save(); });
+    p.addEventListener('keydown', e => {
+      if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); addBlock(b.type, i+1); }
+    });
+    inner.appendChild(label);
+    inner.appendChild(p);
+    content.appendChild(inner);
+    wrap.appendChild(gutter);
+    wrap.appendChild(content);
+    editor.appendChild(wrap);
+  });
+
+  const lastDz = document.createElement('div');
+  lastDz.className = 'drop-zone'; lastDz.dataset.dropIndex = bs.length;
+  editor.appendChild(lastDz);
+  editor.appendChild(addBar);
+
+  updateStats();
+  updateChapTitle();
+  if(viewMode==='focus') refreshFocusClasses();
+  reapplySettings();
+}
+
+function refreshFocusClasses() {
+  document.querySelectorAll('.block-wrap').forEach(w => {
+    w.classList.toggle('block-focused', parseInt(w.dataset.id)===focusedId);
+  });
+}
+
+// ── Stats ──
+function updateStats() {
+  const bs = blocks();
+  const words = bs.reduce((a,b)=>a+b.text.trim().split(/\s+/).filter(Boolean).length, 0);
+  document.getElementById('wc').textContent = words.toLocaleString();
+  document.getElementById('bc').textContent = bs.length;
+  document.getElementById('rt').textContent = Math.max(1, Math.round(words/200))+'min';
+  document.getElementById('prog').style.width = Math.min(100, words/4)+'%';
+
+  const totalWords = allChapters().reduce((a,ch)=>a+ch.blocks.reduce((x,b)=>x+b.text.trim().split(/\s+/).filter(Boolean).length,0),0);
+  const totalChaps = allChapters().length;
+  document.getElementById('total-wc').textContent = totalChaps>1 ? `${totalWords.toLocaleString()} words total · ${totalChaps} chapters` : '';
+
+  const bm = document.getElementById('beat-map');
+  bm.innerHTML = '';
+  bs.forEach(b => {
+    const dot = document.createElement('div');
+    dot.className = 'beat-dot';
+    dot.style.background = TYPE_COLORS[b.type];
+    dot.title = b.text.substring(0,60)+(b.text.length>60?'...':'');
+    dot.onclick = () => { const el=document.querySelector(`.block-wrap[data-id="${b.id}"]`); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); };
+    bm.appendChild(dot);
+  });
+}
+
+// ── Block operations ──
+function addBlock(type, afterIndex) {
+  const ch = activeChapter(); if(!ch) return;
+  const nb = { type, text:'', id: nextBlockId++ };
+  if(afterIndex !== undefined) ch.blocks.splice(afterIndex, 0, nb);
+  else ch.blocks.push(nb);
+  render();
+  setTimeout(() => {
+    const el = document.querySelector(`.block-wrap[data-id="${nb.id}"] [contenteditable]`);
+    if(el) { el.focus(); el.scrollIntoView({behavior:'smooth',block:'center'}); }
+  }, 50);
+  save();
+}
+
+function deleteBlock(id) {
+  const ch = activeChapter(); if(!ch) return;
+  if(ch.blocks.length<=1) { toast('Need at least one block'); return; }
+  ch.blocks = ch.blocks.filter(b=>b.id!==id);
+  render(); save();
+}
+
+// ── Drag (mouse + touch) ──
+function initDrag() {
+  const editor = document.getElementById('editor');
+
+  // Mouse
+  editor.addEventListener('mousedown', e => {
+    const h = e.target.closest('[data-drag]'); if(!h) return;
+    e.preventDefault();
+    startDrag(parseInt(h.dataset.drag));
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', () => { document.removeEventListener('mousemove', onMouseMove); endDrag(); }, {once:true});
+  });
+
+  // Touch
+  editor.addEventListener('touchstart', e => {
+    const h = e.target.closest('[data-drag]'); if(!h) return;
+    // Don't preventDefault here so scroll still works if they don't actually drag
+    startDrag(parseInt(h.dataset.drag));
+    editor.addEventListener('touchmove', onTouchMove, {passive:false});
+    editor.addEventListener('touchend', () => { editor.removeEventListener('touchmove', onTouchMove); endDrag(); }, {once:true});
+  }, {passive:true});
+}
+
+function startDrag(id) {
+  dragId = id;
+  const wrap = document.querySelector(`.block-wrap[data-id="${dragId}"]`);
+  if(wrap) wrap.classList.add('dragging');
+}
+
+function onMouseMove(e) {
+  updateDropTarget(e.clientX, e.clientY);
+}
+
+function onTouchMove(e) {
+  if(dragId === null) return;
+  e.preventDefault(); // prevent scroll while dragging
+  const t = e.touches[0];
+  updateDropTarget(t.clientX, t.clientY);
+}
+
+function updateDropTarget(x, y) {
+  if(dragId === null) return;
+  const zones = document.querySelectorAll('.drop-zone');
+  let closest = null, closestDist = Infinity;
+  zones.forEach(z => {
+    const rect = z.getBoundingClientRect();
+    const dist = Math.abs(y - (rect.top + rect.height/2));
+    if(dist < closestDist) { closestDist=dist; closest=z; }
+  });
+  zones.forEach(z=>z.classList.remove('active'));
+  if(closest) { closest.classList.add('active'); dragOverIndex=parseInt(closest.dataset.dropIndex); }
+}
+
+function endDrag() {
+  const wrap = document.querySelector(`.block-wrap[data-id="${dragId}"]`);
+  if(wrap) wrap.classList.remove('dragging');
+  if(dragOverIndex !== null) {
+    const ch = activeChapter();
+    if(ch) {
+      const from = ch.blocks.findIndex(b=>b.id===dragId);
+      if(from !== -1) {
+        const [moved] = ch.blocks.splice(from,1);
+        const to = dragOverIndex > from ? dragOverIndex-1 : dragOverIndex;
+        ch.blocks.splice(to,0,moved);
+        render(); save();
+      }
+    }
+  }
+  dragId=null; dragOverIndex=null;
+  document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('active'));
+}
+
+// ── Type picker ──
+function openPicker(e, id) {
+  e.stopPropagation();
+  pickerTargetId = id;
+  const picker = document.getElementById('type-picker');
+  picker.classList.add('open');
+  const rect = e.currentTarget.getBoundingClientRect();
+  picker.style.top  = (rect.bottom+4)+'px';
+  picker.style.left = rect.left+'px';
+}
+function changeType(type) {
+  const ch = activeChapter(); if(!ch) return;
+  const b = ch.blocks.find(b=>b.id===pickerTargetId);
+  if(b) { b.type=type; render(); save(); }
+  document.getElementById('type-picker').classList.remove('open');
+}
+
+// ── View ──
+function setView(v) {
+  viewMode=v; showLabels=v!=='clean';
+  ['normal','focus','clean'].forEach(m=>document.getElementById('view-'+m).classList.toggle('active',m===v));
+  document.getElementById('editor').classList.toggle('focus-mode',v==='focus');
+  if(v!=='focus') focusedId=null;
+  render();
+}
+
+// ── Notes ──
+function toggleNotes() { document.getElementById('notes-panel').classList.toggle('open'); }
+
+// ── Theme ──
+function toggleTheme() {
+  const dark = document.documentElement.dataset.theme==='dark';
+  document.documentElement.dataset.theme = dark ? '' : 'dark';
+  localStorage.setItem('nw-theme', dark ? '' : 'dark');
+  updateThemeBtn();
+}
+function updateThemeBtn() {
+  const dark = document.documentElement.dataset.theme==='dark';
+  document.getElementById('theme-btn').innerHTML = dark ? '<i class="ti ti-sun"></i>' : '<i class="ti ti-moon"></i>';
+}
+
+// ── Sidebar toggle ──
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+// ── Settings ──
+function loadSettings() {
+  const s = localStorage.getItem('nw-settings');
+  if(s) { try { settings={...settings,...JSON.parse(s)}; } catch(e){} }
+}
+function saveSettings() { localStorage.setItem('nw-settings', JSON.stringify(settings)); }
+
+function applyAllSettings() {
+  applyFontSize(settings.fontSize, false);
+  applyWidth(settings.width, false);
+  applyLineHeight(settings.lineHeight, false);
+  document.getElementById('font-size-slider').value = settings.fontSize;
+  document.getElementById('font-size-val').textContent = settings.fontSize+'px';
+}
+function reapplySettings() {
+  const fs = settings.fontSize;
+  document.querySelectorAll('.type-prose [contenteditable],.type-dialogue [contenteditable]').forEach(el=>el.style.fontSize=fs+'px');
+  document.querySelectorAll('.type-action [contenteditable],.type-thought [contenteditable]').forEach(el=>el.style.fontSize=(fs-1)+'px');
+  const lh = LH_MAP[settings.lineHeight];
+  document.querySelectorAll('.block-inner [contenteditable]').forEach(el=>el.style.lineHeight=lh);
+}
+function applyFontSize(val, persist=true) {
+  settings.fontSize=parseInt(val);
+  document.getElementById('font-size-val').textContent=val+'px';
+  reapplySettings();
+  if(persist) saveSettings();
+}
+function applyWidth(key, persist=true) {
+  settings.width=key;
+  document.getElementById('editor').style.maxWidth=WIDTH_MAP[key];
+  ['narrow','medium','wide'].forEach(k=>document.getElementById('width-'+k).classList.toggle('active',k===key));
+  if(persist) saveSettings();
+}
+function applyLineHeight(key, persist=true) {
+  settings.lineHeight=key;
+  document.querySelectorAll('.block-inner [contenteditable]').forEach(el=>el.style.lineHeight=LH_MAP[key]);
+  ['tight','normal','airy'].forEach(k=>document.getElementById('lh-'+k).classList.toggle('active',k===key));
+  if(persist) saveSettings();
+}
+function toggleSettings() {
+  const panel=document.getElementById('settings-panel'), btn=document.getElementById('settings-btn');
+  const open=panel.classList.toggle('open');
+  btn.classList.toggle('active',open);
+}
+
+// ── Export / Import ──
+function exportTxt() {
+  const name = document.getElementById('project-name').value||'story';
+  const text = collections.map(coll => {
+    const collHeader = '╔══ '+coll.name.toUpperCase()+' ══╗';
+    const chapText = coll.chapters.map(ch => {
+      const h = '─── '+ch.name+' ───';
+      const body = ch.blocks.map(b => b.type==='scene' ? '\n— '+b.text.toUpperCase()+' —\n' : b.text).join('\n\n');
+      return h+'\n\n'+body;
+    }).join('\n\n\n');
+    return collHeader+'\n\n'+chapText;
+  }).join('\n\n\n\n');
+  download(name+'.txt', text, 'text/plain');
+  toast('Exported as .txt');
+}
+function exportJson() {
+  const name = document.getElementById('project-name').value||'story';
+  download(name+'.json', JSON.stringify({name, collections}, null, 2), 'application/json');
+  toast('Exported as .json');
+}
+function importJson() { document.getElementById('import-input').click(); }
+function handleImport(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(data.collections) {
+        // New format
+        collections = data.collections;
+      } else if(data.chapters) {
+        // Old multi-chapter format — wrap in one collection
+        collections = [{id:0, name: data.name||'Imported', icon:'ti-books', open:true, chapters:data.chapters}];
+        nextCollId=1;
+      } else if(data.blocks) {
+        // Legacy single-chapter format
+        collections = [{id:0, name:'Imported', icon:'ti-books', open:true, chapters:[{id:0,name:data.name||'Chapter 1',blocks:data.blocks,notes:''}]}];
+        nextCollId=1; nextChapterId=1;
+      } else { toast('Unrecognised format'); return; }
+      activeCollId    = collections[0]?.id;
+      activeChapterId = allChapters()[0]?.id;
+      nextCollId      = Math.max(...collections.map(c=>c.id))+1;
+      nextChapterId   = Math.max(...allChapters().map(ch=>ch.id),0)+1;
+      nextBlockId     = Math.max(...allChapters().flatMap(ch=>ch.blocks.map(b=>b.id)),0)+1;
+      if(data.name) document.getElementById('project-name').value=data.name;
+      renderSidebar(); render();
+      document.getElementById('notes-ta').value = activeChapter()?.notes||'';
+      save(); toast('Imported successfully');
+    } catch(err) { toast('Could not parse file'); }
+  };
+  reader.readAsText(file); e.target.value='';
+}
+function download(filename, content, mime) {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download=filename; a.click();
+}
+
+// ── Toast ──
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── Close overlays on outside click ──
+document.addEventListener('click', e => {
+  const picker=document.getElementById('type-picker');
+  if(!picker.contains(e.target)) picker.classList.remove('open');
+  const sp=document.getElementById('settings-panel'), sb=document.getElementById('settings-btn');
+  if(sp.classList.contains('open')&&!sp.contains(e.target)&&!sb.contains(e.target)){
+    sp.classList.remove('open'); sb.classList.remove('active');
+  }
+});
+
+init();
+</script>
+</body>
+</html>
