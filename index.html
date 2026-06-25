@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=ozb14MJ6RAvun0jhV_cvRugPB46mI5ToKuVf4AtLbBW2dIYZrRXa76FMNbJSnrJHbMFljD8o8V2g4cY91V1i1uL6y-xxvS4Q6ewaC-J_hNkPjJMxZD90UZfrC3uAm4ttKrR8MJJk_Eb9fHy9q9qK2HgQQPSwqcBEEBPY8f9EtnqQbY2SwxnOdXkonCqMBRp6aEXuoOMlcWdNfjTxRKyZAWPWExeOu7duJXeB451gGZ9wjh8op12G391ZIPfRTyElfHTnlCQQt13X0YFzYEsQ1_UJfloEG1jHChtqoF5Hou2M_NVCSOurTZFpfODPNz1LuZX2F1ZgK3TN3_JMnWMWkw" charset="UTF-8"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=b_o--TAyzT4aWJRILO3og-dsr5xyaOC8n9s_D5q90W4Uv5W9xpaLSjoc3eL2seUkddLfP16Xff1F1gMCDSKsUVrZyQ4tb0eRLLCCkYBmsndiLofCvRfE5EvEHUILwW3zcqqIMhkG2h0AY5bPoAz8WqIFCA2p37xqUKuKz_E8aogon-1czI2K7S7k8S3pcP3T2HnN86N48-GraFmM2HLDlJAM2fPNMqUmch00B4p0YySaTmdZ4sqO71Pl3n5yIOO_PRtxqSGAuTI32G4AxHkKICCgd_tk7aWLiXB1HEFxfS-pmAp22ugC1m_Ycm49QgguXq-XVmOaUKrVBM_IuMP1K6x-mDZKHc64kEMV8OMJ9-Y" charset="UTF-8"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -118,7 +118,7 @@
   #notes-header span{font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);}
   #notes-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;}
   #notes-close:hover{color:var(--text);}
-  #notes-body{flex:1;overflow-y:auto;padding:12px 14px;}
+  #notes-body{flex:1;overflow-y: visible;padding:12px 14px;}
   #notes-ta{width:100%;height:100%;border:none;background:transparent;outline:none;font-family:var(--sans);font-size:13px;line-height:1.65;color:var(--text);resize:none;}
   #notes-ta::placeholder{color:var(--text3);}
 
@@ -465,6 +465,12 @@ function init(){
     const ch=activeChapter();if(ch)ch.notes=document.getElementById('notes-ta').value;
     scheduleSave();
   });
+  loadNotesIntoUI();
+}
+
+function loadNotesIntoUI(){
+  const ch = activeChapter();
+  document.getElementById('notes-ta').value = ch?.notes || '';
 }
 
 function loadSample(){
@@ -1262,7 +1268,7 @@ document.addEventListener('click',e=>{
     const r=editor.getBoundingClientRect();
     // Sit inside the 50px gutter, centred: gutter starts at r.left-50, eyes are ~61px wide
     // Place so right edge of widget aligns with left edge of block content (~r.left-2)
-    return Math.max(2, r.left - 66);
+    return Math.max(2, r.left - 26);
   }
 
   function frame(){
@@ -1278,7 +1284,9 @@ document.addEventListener('click',e=>{
 
     // Position: left stays fixed to gutter, top tracks block bottom
     widget.style.left=getEyeLeft()+'px';
-    widget.style.top=(currentY - WIDGET_H/2)+'px';
+    const vert = (settings.eyeOrientation || 'vertical') === 'vertical';
+    const verticalLift = vert ? 40 : 0;
+    widget.style.top = (currentY - WIDGET_H/2 - verticalLift) + 'px';
 
     // Gaze: always aimed right toward the text
     const lx=getEyeLeft();
