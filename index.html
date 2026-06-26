@@ -172,6 +172,13 @@
   .img-caption:empty::before{content:attr(data-placeholder);color:var(--text3);pointer-events:none;}
   .img-swap-btn{margin-top:6px;font-size:11px;color:var(--text3);background:none;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:2px 8px;cursor:pointer;transition:color 0.1s;}
   .img-swap-btn:hover{color:var(--text);}
+  .img-resize-wrap{position:relative;display:inline-block;max-width:100%;}
+  .img-resize-handle{position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;background:var(--bg);border:1.5px solid var(--border2);border-radius:3px;cursor:se-resize;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;z-index:2;}
+  .img-resize-handle::after{content:'';display:block;width:6px;height:6px;border-right:1.5px solid var(--text3);border-bottom:1.5px solid var(--text3);}
+  .img-resize-wrap:hover .img-resize-handle{opacity:1;}
+  .img-resize-wrap img{display:block;border-radius:6px;}
+  .img-width-badge{position:absolute;top:6px;left:6px;font-size:10px;background:rgba(0,0,0,0.45);color:#fff;padding:1px 5px;border-radius:3px;pointer-events:none;opacity:0;transition:opacity 0.15s;border-radius:4px;}
+  .img-resize-wrap:hover .img-width-badge{opacity:1;}
 
   /* ── Custom block ── */
   .type-custom .block-inner{border-left-color:var(--custom-accent,#999);}
@@ -719,12 +726,83 @@ function buildImageBlock(b,inner){
   inner.appendChild(label);
 
   if(b.src){
+    const widthPct=b.widthPct||100;
+
+    // Wrapper holds image + resize handle together
+    const wrap=document.createElement('div');
+    wrap.className='img-resize-wrap';
+    wrap.style.width=widthPct+'%';
+
     const img=document.createElement('img');
-    img.className='block-img-img'; // just a class for potential styling
-    img.src=b.src;img.alt=b.caption||'';img.style.maxWidth='100%';img.style.borderRadius='6px';img.style.display='block';
-    img.style.cursor='pointer';img.title='Click to replace image';
+    img.src=b.src;img.alt=b.caption||'';
+    img.style.width='100%';img.style.cursor='pointer';
+    img.title='Click to replace image';
     img.onclick=()=>triggerImageUpload(b.id);
-    inner.appendChild(img);
+    wrap.appendChild(img);
+
+    // Width badge
+    const badge=document.createElement('div');
+    badge.className='img-width-badge';
+    badge.textContent=widthPct+'%';
+    wrap.appendChild(badge);
+
+    // Resize handle — drag horizontally to resize
+    const handle=document.createElement('div');
+    handle.className='img-resize-handle';
+    handle.title='Drag to resize';
+    handle.addEventListener('mousedown',e=>{
+      e.preventDefault();e.stopPropagation();
+      const startX=e.clientX;
+      const startW=wrap.getBoundingClientRect().width;
+      const containerW=inner.getBoundingClientRect().width;
+      const onMove=mv=>{
+        const delta=mv.clientX-startX;
+        const newW=Math.max(80,Math.min(containerW,startW+delta));
+        const pct=Math.round(newW/containerW*100);
+        wrap.style.width=pct+'%';
+        badge.textContent=pct+'%';
+      };
+      const onUp=()=>{
+        document.removeEventListener('mousemove',onMove);
+        document.removeEventListener('mouseup',onUp);
+        // Commit to data
+        const pct=Math.round(wrap.getBoundingClientRect().width/inner.getBoundingClientRect().width*100);
+        b.widthPct=Math.max(10,Math.min(100,pct));
+        badge.textContent=b.widthPct+'%';
+        save();
+      };
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+    });
+    // Touch support
+    handle.addEventListener('touchstart',e=>{
+      e.stopPropagation();
+      const t0=e.touches[0];
+      const startX=t0.clientX;
+      const startW=wrap.getBoundingClientRect().width;
+      const containerW=inner.getBoundingClientRect().width;
+      const onMove=mv=>{
+        mv.preventDefault();
+        const delta=mv.touches[0].clientX-startX;
+        const newW=Math.max(80,Math.min(containerW,startW+delta));
+        const pct=Math.round(newW/containerW*100);
+        wrap.style.width=pct+'%';
+        badge.textContent=pct+'%';
+      };
+      const onEnd=()=>{
+        handle.removeEventListener('touchmove',onMove);
+        handle.removeEventListener('touchend',onEnd);
+        const pct=Math.round(wrap.getBoundingClientRect().width/inner.getBoundingClientRect().width*100);
+        b.widthPct=Math.max(10,Math.min(100,pct));
+        save();
+      };
+      handle.addEventListener('touchmove',onMove,{passive:false});
+      handle.addEventListener('touchend',onEnd);
+    },{passive:true});
+
+    wrap.appendChild(handle);
+    inner.appendChild(wrap);
+
     const cap=document.createElement('div');
     cap.className='img-caption';cap.contentEditable='true';
     cap.setAttribute('data-placeholder','Add a caption...');
@@ -732,6 +810,7 @@ function buildImageBlock(b,inner){
     cap.addEventListener('input',()=>{b.caption=cap.textContent;scheduleSave();});
     cap.addEventListener('blur',()=>{b.caption=cap.textContent;save();});
     inner.appendChild(cap);
+
     const swapBtn=document.createElement('button');
     swapBtn.className='img-swap-btn';swapBtn.textContent='Replace image';
     swapBtn.onclick=()=>triggerImageUpload(b.id);
