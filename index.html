@@ -172,13 +172,6 @@
   .img-caption:empty::before{content:attr(data-placeholder);color:var(--text3);pointer-events:none;}
   .img-swap-btn{margin-top:6px;font-size:11px;color:var(--text3);background:none;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:2px 8px;cursor:pointer;transition:color 0.1s;}
   .img-swap-btn:hover{color:var(--text);}
-  .img-resize-wrap{position:relative;display:inline-block;max-width:100%;}
-  .img-resize-handle{position:absolute;right:-5px;bottom:-5px;width:14px;height:14px;background:var(--bg);border:1.5px solid var(--border2);border-radius:3px;cursor:se-resize;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.15s;z-index:2;}
-  .img-resize-handle::after{content:'';display:block;width:6px;height:6px;border-right:1.5px solid var(--text3);border-bottom:1.5px solid var(--text3);}
-  .img-resize-wrap:hover .img-resize-handle{opacity:1;}
-  .img-resize-wrap img{display:block;border-radius:6px;}
-  .img-width-badge{position:absolute;top:6px;left:6px;font-size:10px;background:rgba(0,0,0,0.45);color:#fff;padding:1px 5px;border-radius:3px;pointer-events:none;opacity:0;transition:opacity 0.15s;border-radius:4px;}
-  .img-resize-wrap:hover .img-width-badge{opacity:1;}
 
   /* ── Custom block ── */
   .type-custom .block-inner{border-left-color:var(--custom-accent,#999);}
@@ -241,6 +234,15 @@
   .seg-btn.active{background:var(--bg3);color:var(--text);font-weight:500;}
 
   /* Toast */
+  /* Confirm popup */
+  #confirm-popup{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:12px 14px;z-index:400;display:none;flex-direction:column;gap:10px;min-width:180px;max-width:240px;}
+  #confirm-popup.open{display:flex;}
+  #confirm-msg{font-size:13px;color:var(--text);line-height:1.4;}
+  #confirm-btns{display:flex;gap:6px;justify-content:flex-end;}
+  .confirm-yes{font-size:12px;padding:4px 12px;border:none;border-radius:var(--radius-sm);background:#c0392b;color:#fff;cursor:pointer;transition:background 0.15s;}
+  .confirm-yes:hover{background:#a93226;}
+  .confirm-no{font-size:12px;padding:4px 12px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:transparent;color:var(--text2);cursor:pointer;transition:background 0.15s;}
+  .confirm-no:hover{background:var(--bg2);}
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:var(--bg);font-size:13px;padding:8px 18px;border-radius:20px;transition:transform 0.3s;z-index:300;pointer-events:none;}
   #toast.show{transform:translateX(-50%) translateY(0);}
 
@@ -412,6 +414,13 @@
   </svg>
 </div>
 
+<div id="confirm-popup">
+  <div id="confirm-msg">Are you sure?</div>
+  <div id="confirm-btns">
+    <button class="confirm-no" onclick="closeConfirm()">Cancel</button>
+    <button class="confirm-yes" id="confirm-yes-btn">Delete</button>
+  </div>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -524,7 +533,7 @@ function renderSidebar(){
         <button class="coll-btn" title="Move up" onclick="moveCollection(${coll.id},-1)"><i class="ti ti-chevron-up"></i></button>
         <button class="coll-btn" title="Move down" onclick="moveCollection(${coll.id},1)"><i class="ti ti-chevron-down"></i></button>
         <button class="coll-btn" title="Add chapter" onclick="addChapter(${coll.id})"><i class="ti ti-plus"></i></button>
-        <button class="coll-btn danger" title="Delete collection" onclick="deleteCollection(${coll.id})"><i class="ti ti-trash"></i></button>
+        <button class="coll-btn danger" title="Delete collection" onclick="deleteCollection(${coll.id},this)"><i class="ti ti-trash"></i></button>
       </div>`;
     header.querySelector('.coll-chevron').addEventListener('click',e=>{e.stopPropagation();toggleCollection(coll.id);});
     header.addEventListener('click',e=>{
@@ -547,7 +556,7 @@ function renderSidebar(){
         <div class="chap-actions">
           <button class="chap-btn" title="Move up" onclick="moveChapter(${coll.id},${ch.id},-1)"><i class="ti ti-chevron-up"></i></button>
           <button class="chap-btn" title="Move down" onclick="moveChapter(${coll.id},${ch.id},1)"><i class="ti ti-chevron-down"></i></button>
-          <button class="chap-btn danger" title="Delete" onclick="deleteChapter(${coll.id},${ch.id})"><i class="ti ti-trash"></i></button>
+          <button class="chap-btn danger" title="Delete" onclick="deleteChapter(${coll.id},${ch.id},this)"><i class="ti ti-trash"></i></button>
         </div>`;
       item.addEventListener('click',e=>{
         if(e.target.closest('.chap-btn')||e.target.closest('.chap-name[contenteditable="true"]'))return;
@@ -592,14 +601,17 @@ function addCollection(){
     if(last){const el=last.querySelector('.coll-name');if(el)startRenameEl(el,val=>{coll.name=val||coll.name;renderSidebar();save();});}
   },50);
 }
-function deleteCollection(id){
+function deleteCollection(id,anchorEl){
   if(collections.length===1){toast("Can't delete the only collection");return;}
-  collections=collections.filter(c=>c.id!==id);
-  if(!allChapters().find(ch=>ch.id===activeChapterId)){
-    const first=allChapters()[0];
-    if(first){activeChapterId=first.id;activeCollId=collections.find(c=>c.chapters.some(ch=>ch.id===first.id))?.id;}
-  }
-  renderSidebar();render();save();
+  const coll=collections.find(c=>c.id===id);
+  confirm('Delete "'+(coll?.name||'collection')+'" and all its chapters?','Delete',()=>{
+    collections=collections.filter(c=>c.id!==id);
+    if(!allChapters().find(ch=>ch.id===activeChapterId)){
+      const first=allChapters()[0];
+      if(first){activeChapterId=first.id;activeCollId=collections.find(c=>c.chapters.some(ch=>ch.id===first.id))?.id;}
+    }
+    renderSidebar();render();save();
+  },anchorEl);
 }
 function moveCollection(id,dir){
   const i=collections.findIndex(c=>c.id===id);const ni=i+dir;
@@ -616,15 +628,18 @@ function addChapter(collId){
     if(item){const el=item.querySelector('.chap-name');if(el)startRenameEl(el,val=>{ch.name=val||ch.name;renderSidebar();updateChapTitle();save();});}
   },60);
 }
-function deleteChapter(collId,chapId){
+function deleteChapter(collId,chapId,anchorEl){
   const coll=collections.find(c=>c.id===collId);if(!coll)return;
   if(allChapters().length===1){toast("Can't delete the only chapter");return;}
-  coll.chapters=coll.chapters.filter(ch=>ch.id!==chapId);
-  if(activeChapterId===chapId){
-    const next=allChapters()[0];
-    if(next){const nc=collections.find(c=>c.chapters.some(ch=>ch.id===next.id));switchChapter(nc.id,next.id);}
-  }
-  renderSidebar();save();
+  const ch=coll.chapters.find(c=>c.id===chapId);
+  confirm('Delete "'+(ch?.name||'chapter')+'"?','Delete',()=>{
+    coll.chapters=coll.chapters.filter(ch=>ch.id!==chapId);
+    if(activeChapterId===chapId){
+      const next=allChapters()[0];
+      if(next){const nc=collections.find(c=>c.chapters.some(ch=>ch.id===next.id));switchChapter(nc.id,next.id);}
+    }
+    renderSidebar();save();
+  },anchorEl);
 }
 function moveChapter(collId,chapId,dir){
   const coll=collections.find(c=>c.id===collId);if(!coll)return;
@@ -726,83 +741,12 @@ function buildImageBlock(b,inner){
   inner.appendChild(label);
 
   if(b.src){
-    const widthPct=b.widthPct||100;
-
-    // Wrapper holds image + resize handle together
-    const wrap=document.createElement('div');
-    wrap.className='img-resize-wrap';
-    wrap.style.width=widthPct+'%';
-
     const img=document.createElement('img');
-    img.src=b.src;img.alt=b.caption||'';
-    img.style.width='100%';img.style.cursor='pointer';
-    img.title='Click to replace image';
+    img.className='block-img-img'; // just a class for potential styling
+    img.src=b.src;img.alt=b.caption||'';img.style.maxWidth='100%';img.style.borderRadius='6px';img.style.display='block';
+    img.style.cursor='pointer';img.title='Click to replace image';
     img.onclick=()=>triggerImageUpload(b.id);
-    wrap.appendChild(img);
-
-    // Width badge
-    const badge=document.createElement('div');
-    badge.className='img-width-badge';
-    badge.textContent=widthPct+'%';
-    wrap.appendChild(badge);
-
-    // Resize handle — drag horizontally to resize
-    const handle=document.createElement('div');
-    handle.className='img-resize-handle';
-    handle.title='Drag to resize';
-    handle.addEventListener('mousedown',e=>{
-      e.preventDefault();e.stopPropagation();
-      const startX=e.clientX;
-      const startW=wrap.getBoundingClientRect().width;
-      const containerW=inner.getBoundingClientRect().width;
-      const onMove=mv=>{
-        const delta=mv.clientX-startX;
-        const newW=Math.max(80,Math.min(containerW,startW+delta));
-        const pct=Math.round(newW/containerW*100);
-        wrap.style.width=pct+'%';
-        badge.textContent=pct+'%';
-      };
-      const onUp=()=>{
-        document.removeEventListener('mousemove',onMove);
-        document.removeEventListener('mouseup',onUp);
-        // Commit to data
-        const pct=Math.round(wrap.getBoundingClientRect().width/inner.getBoundingClientRect().width*100);
-        b.widthPct=Math.max(10,Math.min(100,pct));
-        badge.textContent=b.widthPct+'%';
-        save();
-      };
-      document.addEventListener('mousemove',onMove);
-      document.addEventListener('mouseup',onUp);
-    });
-    // Touch support
-    handle.addEventListener('touchstart',e=>{
-      e.stopPropagation();
-      const t0=e.touches[0];
-      const startX=t0.clientX;
-      const startW=wrap.getBoundingClientRect().width;
-      const containerW=inner.getBoundingClientRect().width;
-      const onMove=mv=>{
-        mv.preventDefault();
-        const delta=mv.touches[0].clientX-startX;
-        const newW=Math.max(80,Math.min(containerW,startW+delta));
-        const pct=Math.round(newW/containerW*100);
-        wrap.style.width=pct+'%';
-        badge.textContent=pct+'%';
-      };
-      const onEnd=()=>{
-        handle.removeEventListener('touchmove',onMove);
-        handle.removeEventListener('touchend',onEnd);
-        const pct=Math.round(wrap.getBoundingClientRect().width/inner.getBoundingClientRect().width*100);
-        b.widthPct=Math.max(10,Math.min(100,pct));
-        save();
-      };
-      handle.addEventListener('touchmove',onMove,{passive:false});
-      handle.addEventListener('touchend',onEnd);
-    },{passive:true});
-
-    wrap.appendChild(handle);
-    inner.appendChild(wrap);
-
+    inner.appendChild(img);
     const cap=document.createElement('div');
     cap.className='img-caption';cap.contentEditable='true';
     cap.setAttribute('data-placeholder','Add a caption...');
@@ -810,7 +754,6 @@ function buildImageBlock(b,inner){
     cap.addEventListener('input',()=>{b.caption=cap.textContent;scheduleSave();});
     cap.addEventListener('blur',()=>{b.caption=cap.textContent;save();});
     inner.appendChild(cap);
-
     const swapBtn=document.createElement('button');
     swapBtn.className='img-swap-btn';swapBtn.textContent='Replace image';
     swapBtn.onclick=()=>triggerImageUpload(b.id);
@@ -1034,8 +977,11 @@ function addBlock(type,afterIndex){
 function deleteBlock(id){
   const ch=activeChapter();if(!ch)return;
   if(ch.blocks.length<=1){toast('Need at least one block');return;}
-  ch.blocks=ch.blocks.filter(b=>b.id!==id);
-  render();save();
+  const btn=document.querySelector(`.block-wrap[data-id="${id}"] .gutter-btn[title="Delete block"]`);
+  confirm('Delete this block?','Delete',()=>{
+    ch.blocks=ch.blocks.filter(b=>b.id!==id);
+    render();save();
+  },btn);
 }
 
 // ── Drag ──
@@ -1085,9 +1031,23 @@ function endDrag(){
 // ── Type picker ──
 function openPicker(e,id){
   e.stopPropagation();pickerTargetId=id;
-  const picker=document.getElementById('type-picker');picker.classList.add('open');
+  const picker=document.getElementById('type-picker');
+  // Show offscreen first to measure height
+  picker.style.visibility='hidden';picker.style.display='flex';
+  const ph=picker.offsetHeight, pw=picker.offsetWidth;
+  picker.style.display='';picker.style.visibility='';
+  picker.classList.add('open');
   const rect=e.currentTarget.getBoundingClientRect();
-  picker.style.top=(rect.bottom+4)+'px';picker.style.left=rect.left+'px';
+  const margin=6;
+  // Prefer below, flip above if not enough room
+  let top=rect.bottom+margin;
+  if(top+ph>window.innerHeight-margin)top=rect.top-ph-margin;
+  top=Math.max(margin,top);
+  // Prefer aligning left edge, shift left if off right edge
+  let left=rect.left;
+  if(left+pw>window.innerWidth-margin)left=window.innerWidth-pw-margin;
+  left=Math.max(margin,left);
+  picker.style.top=top+'px';picker.style.left=left+'px';
 }
 function changeType(type){
   const ch=activeChapter();if(!ch)return;
@@ -1169,49 +1129,50 @@ function toggleSettings(){const panel=document.getElementById('settings-panel'),
 
 // ── Export / Import ──
 async function exportZip(){
+  if(typeof JSZip==='undefined'){toast('JSZip not loaded — check internet connection');return;}
   const name=(document.getElementById('project-name').value||'story').replace(/[^a-z0-9_\-\s]/gi,'_');
-  const zip=new JSZip();
-  const imgFolder=zip.folder('images');
-  let imgCounter=0;
-  const imgMap={}; // blockId -> filename
+  try{
+    const zip=new JSZip();
+    const imgFolder=zip.folder('images');
+    let imgCounter=0;
+    const imgMap={};
 
-  // Collect all images across all chapters
-  allChapters().forEach(ch=>{
-    ch.blocks.filter(b=>b.type==='image'&&b.src).forEach(b=>{
-      const ext=b.src.match(/data:image\/(\w+)/)?.[1]||'png';
-      const fname=`img_${++imgCounter}.${ext}`;
-      imgMap[b.id]=fname;
-      const base64=b.src.split(',')[1];
-      imgFolder.file(fname,base64,{base64:true});
+    allChapters().forEach(chapter=>{
+      chapter.blocks.filter(b=>b.type==='image'&&b.src).forEach(b=>{
+        const ext=b.src.match(/data:image\/(\w+)/)?.[1]||'png';
+        const fname='img_'+(++imgCounter)+'.'+ext;
+        imgMap[b.id]=fname;
+        imgFolder.file(fname,b.src.split(',')[1],{base64:true});
+      });
     });
-  });
 
-  // Build text
-  const txt=collections.map(coll=>{
-    const collHead='╔══ '+coll.name.toUpperCase()+' ══╗';
-    const chapText=coll.chapters.map(ch=>{
-      const h='─── '+ch.name+' ───';
-      const body=ch.blocks.map(b=>{
-        if(b.type==='scene')return'\n— '+b.text.toUpperCase()+' —\n';
-        if(b.type==='image')return`[Image: images/${imgMap[b.id]||'?'}${b.caption?' — '+b.caption:''}]`;
-        if(b.type==='group')return'\n▸ '+b.name+'\n';
-        if(b.type==='custom')return`[${b.label||'Custom'}] ${b.text||''}`;
-        return b.text||'';
-      }).join('\n\n');
-      return h+'\n\n'+body;
-    }).join('\n\n\n');
-    return collHead+'\n\n'+chapText;
-  }).join('\n\n\n\n');
+    const txt=collections.map(coll=>{
+      const collHead='╔══ '+coll.name.toUpperCase()+' ══╗';
+      const chapText=coll.chapters.map(chapter=>{
+        const h='─── '+chapter.name+' ───';
+        const body=chapter.blocks.map(b=>{
+          if(b.type==='scene')return'\n— '+b.text.toUpperCase()+' —\n';
+          if(b.type==='image')return'[Image: images/'+(imgMap[b.id]||'?')+( b.caption?' — '+b.caption:'')+']';
+          if(b.type==='group')return'\n▸ '+(b.name||'Group')+'\n';
+          if(b.type==='custom')return'['+(b.label||'Custom')+'] '+(b.text||'');
+          return b.text||'';
+        }).join('\n\n');
+        return h+'\n\n'+body;
+      }).join('\n\n\n');
+      return collHead+'\n\n'+chapText;
+    }).join('\n\n\n\n');
 
-  zip.file('story.txt',txt);
-  zip.file('story.json',JSON.stringify({name,collections},null,2));
-  if(ch&&ch.notes)zip.file('notes.txt',allChapters().filter(c=>c.notes).map(c=>`=== ${c.name} ===\n${c.notes}`).join('\n\n'));
+    zip.file('story.txt',txt);
+    zip.file('story.json',JSON.stringify({name,collections},null,2));
+    const notesContent=allChapters().filter(c=>c.notes&&c.notes.trim()).map(c=>'=== '+c.name+' ===\n'+c.notes).join('\n\n');
+    if(notesContent)zip.file('notes.txt',notesContent);
 
-  const blob=await zip.generateAsync({type:'blob'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download=name+'.zip';a.click();
-  toast('Exported as .zip folder');
+    const blob=await zip.generateAsync({type:'blob'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=name+'.zip';a.click();
+    toast('Exported as .zip');
+  }catch(err){toast('Export failed: '+err.message);console.error(err);}
 }
 
 function exportJson(){
@@ -1296,6 +1257,44 @@ function classifyParagraph(p){
   // Default: prose
   return{type:'prose',text:p};
 }
+
+// ── Confirm popup ──
+let confirmCallback=null;
+function confirm(msg,label,onYes,anchorEl){
+  const popup=document.getElementById('confirm-popup');
+  document.getElementById('confirm-msg').textContent=msg;
+  const yesBtn=document.getElementById('confirm-yes-btn');
+  yesBtn.textContent=label||'Delete';
+  confirmCallback=onYes;
+  // Position near anchor
+  if(anchorEl){
+    const r=anchorEl.getBoundingClientRect();
+    const pw=200;
+    let left=r.right+6;
+    if(left+pw>window.innerWidth)left=r.left-pw-6;
+    let top=r.top;
+    if(top+80>window.innerHeight)top=window.innerHeight-90;
+    popup.style.left=Math.max(4,left)+'px';
+    popup.style.top=Math.max(4,top)+'px';
+  } else {
+    popup.style.left='50%';popup.style.top='50%';
+    popup.style.transform='translate(-50%,-50%)';
+  }
+  popup.classList.add('open');
+  yesBtn.focus();
+}
+function closeConfirm(){
+  document.getElementById('confirm-popup').classList.remove('open');
+  document.getElementById('confirm-popup').style.transform='';
+  confirmCallback=null;
+}
+document.getElementById('confirm-yes-btn').addEventListener('click',()=>{
+  if(confirmCallback)confirmCallback();
+  closeConfirm();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeConfirm();
+});
 
 // ── Toast ──
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
