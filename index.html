@@ -208,6 +208,15 @@
 
   /* Type picker */
   #type-picker{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.1);padding:6px;z-index:200;display:none;flex-direction:column;gap:2px;min-width:170px;}
+  #export-menu{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:8px;z-index:250;display:none;flex-direction:column;gap:2px;min-width:220px;}
+  #export-menu.open{display:flex;}
+  .export-section-title{font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);padding:4px 8px 2px;}
+  .export-opt{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius-sm);font-size:13px;color:var(--text2);border:none;background:none;text-align:left;width:100%;cursor:pointer;transition:background 0.12s,color 0.12s;}
+  .export-opt:hover{background:var(--bg2);color:var(--text);}
+  .export-opt.disabled{opacity:0.38;cursor:default;pointer-events:none;}
+  .export-opt i{font-size:15px;flex-shrink:0;}
+  .export-opt-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+  .export-sep{height:0.5px;background:var(--border);margin:4px 0;}
   #type-picker.open{display:flex;}
   .type-opt{padding:7px 12px;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text2);border:none;background:none;text-align:left;width:100%;}
   .type-opt:hover{background:var(--bg2);color:var(--text);}
@@ -281,8 +290,7 @@
         <div class="stat-total" id="total-wc"></div>
       </div>
       <button class="side-btn" onclick="toggleNotes()"><i class="ti ti-notes"></i><span class="side-label hide-collapsed">Chapter notes</span></button>
-      <button class="side-btn" onclick="exportZip()"><i class="ti ti-package-export"></i><span class="side-label hide-collapsed">Export folder (.zip)</span></button>
-      <button class="side-btn" onclick="exportJson()"><i class="ti ti-braces"></i><span class="side-label hide-collapsed">Export .json</span></button>
+      <button class="side-btn" id="export-menu-btn" onclick="toggleExportMenu(event)"><i class="ti ti-package-export"></i><span class="side-label hide-collapsed">Export…</span></button>
       <button class="side-btn" onclick="importJson()"><i class="ti ti-upload"></i><span class="side-label hide-collapsed">Import .json</span></button>
       <input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
       <button class="side-btn" onclick="importTxt()"><i class="ti ti-txt"></i><span class="side-label hide-collapsed">Import .txt</span></button>
@@ -348,6 +356,34 @@
   <button class="type-opt" onclick="changeType('image')"><span class="type-dot" style="background:#C0A86B"></span>Image</button>
   <button class="type-opt" onclick="changeType('custom')"><span class="type-dot" style="background:#999"></span>Custom</button>
   <button class="type-opt" onclick="changeType('group')"><span class="type-dot" style="background:var(--border2)"></span>Group header</button>
+</div>
+
+<!-- Export menu -->
+<div id="export-menu">
+  <div class="export-section-title">Scope</div>
+  <div style="display:flex;gap:4px;padding:2px 6px 6px;">
+    <button class="seg-btn active" id="exp-scope-chapter" onclick="setExportScope('chapter')">Chapter</button>
+    <button class="seg-btn" id="exp-scope-collection" onclick="setExportScope('collection')">Collection</button>
+    <button class="seg-btn" id="exp-scope-all" onclick="setExportScope('all')">Everything</button>
+  </div>
+  <div class="export-sep"></div>
+  <div class="export-section-title">Format</div>
+  <button class="export-opt" onclick="doExport('zip')">
+    <i class="ti ti-file-zip"></i>
+    <div><div>ZIP folder</div><div class="export-opt-sub">TXT + images</div></div>
+  </button>
+  <button class="export-opt" onclick="doExport('txt')">
+    <i class="ti ti-file-text"></i>
+    <div><div>Plain text</div><div class="export-opt-sub">TXT only, no images</div></div>
+  </button>
+  <button class="export-opt" onclick="doExport('json')">
+    <i class="ti ti-braces"></i>
+    <div><div>JSON</div><div class="export-opt-sub">Reimportable — merges on import</div></div>
+  </button>
+  <button class="export-opt disabled">
+    <i class="ti ti-file-type-pdf"></i>
+    <div><div>PDF <span style="font-size:10px;opacity:0.6">coming soon</span></div><div class="export-opt-sub">Formatted document</div></div>
+  </button>
 </div>
 
 <!-- Color picker for custom blocks -->
@@ -1128,58 +1164,123 @@ function applyLineHeight(key,persist=true){settings.lineHeight=key;document.quer
 function toggleSettings(){const panel=document.getElementById('settings-panel'),btn=document.getElementById('settings-btn');const open=panel.classList.toggle('open');btn.classList.toggle('active',open);}
 
 // ── Export / Import ──
-async function exportZip(){
-  if(typeof JSZip==='undefined'){toast('JSZip not loaded — check internet connection');return;}
-  const name=(document.getElementById('project-name').value||'story').replace(/[^a-z0-9_\-\s]/gi,'_');
-  try{
-    const zip=new JSZip();
-    const imgFolder=zip.folder('images');
-    let imgCounter=0;
-    const imgMap={};
+// ── Export system ──
+let exportScope='chapter';
 
-    allChapters().forEach(chapter=>{
-      chapter.blocks.filter(b=>b.type==='image'&&b.src).forEach(b=>{
-        const ext=b.src.match(/data:image\/(\w+)/)?.[1]||'png';
-        const fname='img_'+(++imgCounter)+'.'+ext;
-        imgMap[b.id]=fname;
-        imgFolder.file(fname,b.src.split(',')[1],{base64:true});
+function toggleExportMenu(e){
+  e.stopPropagation();
+  const menu=document.getElementById('export-menu');
+  const btn=document.getElementById('export-menu-btn');
+  const isOpen=menu.classList.toggle('open');
+  if(isOpen){
+    const r=btn.getBoundingClientRect();
+    const mh=280;
+    let top=r.top-mh-6;
+    if(top<6)top=r.bottom+6;
+    menu.style.top=Math.max(6,top)+'px';
+    let left=r.right+8;
+    if(left+230>window.innerWidth)left=r.left-238;
+    menu.style.left=Math.max(4,left)+'px';
+  }
+}
+function closeExportMenu(){document.getElementById('export-menu').classList.remove('open');}
+
+function setExportScope(scope){
+  exportScope=scope;
+  ['chapter','collection','all'].forEach(s=>{
+    document.getElementById('exp-scope-'+s).classList.toggle('active',s===scope);
+  });
+}
+
+function getScopeData(){
+  const projName=(document.getElementById('project-name').value||'story').replace(/[^a-z0-9_\-\s]/gi,'_');
+  if(exportScope==='chapter'){
+    const ch=activeChapter();
+    const coll=activeCollection();
+    const label=(coll?coll.name+' - ':'')+(ch?ch.name:'chapter');
+    const filename=projName+'_'+(ch?ch.name:'chapter').replace(/[^a-z0-9_\-\s]/gi,'_');
+    return{chapters:ch?[ch]:[],label,filename};
+  }
+  if(exportScope==='collection'){
+    const coll=activeCollection();
+    const label=coll?coll.name:'collection';
+    return{chapters:coll?coll.chapters:[],label,filename:projName+'_'+label.replace(/[^a-z0-9_\-\s]/gi,'_')};
+  }
+  return{chapters:allChapters(),label:projName,filename:projName};
+}
+
+function blocksToTxt(chapters,imgMap){
+  return chapters.map(ch=>{
+    const h='─── '+ch.name+' ───';
+    const body=ch.blocks.map(b=>{
+      if(b.type==='scene')return'\n\u2014 '+b.text.toUpperCase()+' \u2014\n';
+      if(b.type==='image')return'[Image: images/'+(imgMap&&imgMap[b.id]?imgMap[b.id]:'?')+(b.caption?' \u2014 '+b.caption:'')+']';
+      if(b.type==='group'){const lvl=b.level||0;return'\n'+'#'.repeat(lvl+1)+' '+(b.name||'Group')+'\n';}
+      if(b.type==='custom')return'['+(b.label||'Custom')+'] '+(b.text||'');
+      return b.text||'';
+    }).join('\n\n');
+    return h+'\n\n'+body;
+  }).join('\n\n\n');
+}
+
+async function doExport(format){
+  closeExportMenu();
+  const {chapters,label,filename}=getScopeData();
+  if(!chapters.length){toast('Nothing to export');return;}
+
+  if(format==='txt'){
+    download(filename+'.txt',blocksToTxt(chapters,null),'text/plain');
+    toast('Exported '+label+' as .txt');
+    return;
+  }
+  if(format==='json'){
+    const name=document.getElementById('project-name').value||'story';
+    if(exportScope==='all'){
+      download(filename+'.json',JSON.stringify({name,collections},null,2),'application/json');
+    } else if(exportScope==='collection'){
+      const coll=activeCollection();
+      download(filename+'.json',JSON.stringify({name:label,collection:coll},null,2),'application/json');
+    } else {
+      const ch=activeChapter();
+      download(filename+'.json',JSON.stringify({name:label,chapter:ch},null,2),'application/json');
+    }
+    toast('Exported '+label+' as .json');
+    return;
+  }
+  if(format==='zip'){
+    if(typeof JSZip==='undefined'){toast('JSZip not loaded \u2014 check internet connection');return;}
+    try{
+      const zip=new JSZip();
+      const imgFolder=zip.folder('images');
+      let imgCounter=0;
+      const imgMap={};
+      chapters.forEach(chapter=>{
+        chapter.blocks.filter(b=>b.type==='image'&&b.src).forEach(b=>{
+          const ext=b.src.match(/data:image\/(\w+)/)?.[1]||'png';
+          const fname='img_'+(++imgCounter)+'.'+ext;
+          imgMap[b.id]=fname;
+          imgFolder.file(fname,b.src.split(',')[1],{base64:true});
+        });
       });
-    });
-
-    const txt=collections.map(coll=>{
-      const collHead='╔══ '+coll.name.toUpperCase()+' ══╗';
-      const chapText=coll.chapters.map(chapter=>{
-        const h='─── '+chapter.name+' ───';
-        const body=chapter.blocks.map(b=>{
-          if(b.type==='scene')return'\n— '+b.text.toUpperCase()+' —\n';
-          if(b.type==='image')return'[Image: images/'+(imgMap[b.id]||'?')+( b.caption?' — '+b.caption:'')+']';
-          if(b.type==='group')return'\n▸ '+(b.name||'Group')+'\n';
-          if(b.type==='custom')return'['+(b.label||'Custom')+'] '+(b.text||'');
-          return b.text||'';
-        }).join('\n\n');
-        return h+'\n\n'+body;
-      }).join('\n\n\n');
-      return collHead+'\n\n'+chapText;
-    }).join('\n\n\n\n');
-
-    zip.file('story.txt',txt);
-    zip.file('story.json',JSON.stringify({name,collections},null,2));
-    const notesContent=allChapters().filter(c=>c.notes&&c.notes.trim()).map(c=>'=== '+c.name+' ===\n'+c.notes).join('\n\n');
-    if(notesContent)zip.file('notes.txt',notesContent);
-
-    const blob=await zip.generateAsync({type:'blob'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download=name+'.zip';a.click();
-    toast('Exported as .zip');
-  }catch(err){toast('Export failed: '+err.message);console.error(err);}
+      zip.file(label+'.txt',blocksToTxt(chapters,imgMap));
+      const notesContent=chapters.filter(c=>c.notes&&c.notes.trim()).map(c=>'=== '+c.name+' ===\n'+c.notes).join('\n\n');
+      if(notesContent)zip.file('notes.txt',notesContent);
+      if(exportScope==='all'){
+        const name=document.getElementById('project-name').value||'story';
+        zip.file('story.json',JSON.stringify({name,collections},null,2));
+      }
+      const blob=await zip.generateAsync({type:'blob'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=filename+'.zip';a.click();
+      toast('Exported '+label+' as .zip');
+    }catch(err){toast('Export failed: '+err.message);console.error(err);}
+  }
 }
 
-function exportJson(){
-  const name=document.getElementById('project-name').value||'story';
-  download(name+'.json',JSON.stringify({name,collections},null,2),'application/json');
-  toast('Exported as .json');
-}
+function exportJson(){doExport('json');}
+
+
 function importJson(){document.getElementById('import-input').click();}
 function handleImport(e){
   const file=e.target.files[0];if(!file)return;
@@ -1187,18 +1288,64 @@ function handleImport(e){
   reader.onload=ev=>{
     try{
       const data=JSON.parse(ev.target.result);
-      if(data.collections){collections=data.collections;}
-      else if(data.chapters){collections=[{id:0,name:data.name||'Imported',icon:'ti-books',open:true,chapters:data.chapters}];nextCollId=1;}
-      else if(data.blocks){collections=[{id:0,name:'Imported',icon:'ti-books',open:true,chapters:[{id:0,name:data.name||'Chapter 1',blocks:data.blocks,notes:''}]}];nextCollId=1;nextChapterId=1;}
-      else{toast('Unrecognised format');return;}
-      activeCollId=collections[0]?.id;activeChapterId=allChapters()[0]?.id;
-      nextCollId=Math.max(...collections.map(c=>c.id))+1;
-      nextChapterId=Math.max(...allChapters().map(ch=>ch.id),0)+1;
-      nextBlockId=Math.max(...allChapters().flatMap(ch=>ch.blocks.map(b=>b.id)),0)+1;
-      if(data.name)document.getElementById('project-name').value=data.name;
-      renderSidebar();render();document.getElementById('notes-ta').value=activeChapter()?.notes||'';
-      save();toast('Imported successfully');
-    }catch(err){toast('Could not parse file');}
+      // Remap IDs to avoid collisions with existing content
+      function remapChapter(ch){
+        const newCh={...ch,id:nextChapterId++,blocks:(ch.blocks||[]).map(b=>({...b,id:nextBlockId++}))};
+        return newCh;
+      }
+      function remapCollection(coll){
+        return{...coll,id:nextCollId++,chapters:(coll.chapters||[]).map(remapChapter)};
+      }
+
+      if(data.collections){
+        // Full project — replace everything
+        collections=data.collections;
+        if(data.name)document.getElementById('project-name').value=data.name;
+        activeCollId=collections[0]?.id;
+        activeChapterId=allChapters()[0]?.id;
+        nextCollId=Math.max(...collections.map(c=>c.id))+1;
+        nextChapterId=Math.max(...allChapters().map(ch=>ch.id),0)+1;
+        nextBlockId=Math.max(...allChapters().flatMap(ch=>ch.blocks.map(b=>b.id)),0)+1;
+        toast('Project imported');
+      } else if(data.collection){
+        // Single collection export — append as new collection
+        const newColl=remapCollection(data.collection);
+        collections.push(newColl);
+        activeCollId=newColl.id;
+        activeChapterId=newColl.chapters[0]?.id;
+        toast('Collection "'+newColl.name+'" added');
+      } else if(data.chapter){
+        // Single chapter export — append to active collection
+        const coll=activeCollection();
+        if(!coll){toast('No active collection to import into');return;}
+        const newCh=remapChapter(data.chapter);
+        coll.chapters.push(newCh);
+        coll.open=true;
+        activeChapterId=newCh.id;
+        toast('Chapter "'+newCh.name+'" added to '+coll.name);
+      } else if(data.chapters){
+        // Legacy: array of chapters — wrap in new collection
+        const newColl=remapCollection({id:0,name:data.name||'Imported',icon:'ti-books',open:true,chapters:data.chapters});
+        collections.push(newColl);
+        activeCollId=newColl.id;
+        activeChapterId=newColl.chapters[0]?.id;
+        toast('Imported as new collection');
+      } else if(data.blocks){
+        // Legacy: raw blocks — wrap in new chapter in active collection
+        const coll=activeCollection()||collections[0];
+        const newCh=remapChapter({id:0,name:data.name||'Imported',blocks:data.blocks,notes:''});
+        coll.chapters.push(newCh);
+        coll.open=true;
+        activeCollId=coll.id;
+        activeChapterId=newCh.id;
+        toast('Blocks imported as new chapter');
+      } else {
+        toast('Unrecognised format');return;
+      }
+      renderSidebar();render();
+      document.getElementById('notes-ta').value=activeChapter()?.notes||'';
+      save();
+    }catch(err){toast('Could not parse file');console.error(err);}
   };
   reader.readAsText(file);e.target.value='';
 }
@@ -1303,6 +1450,8 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 document.addEventListener('click',e=>{
   const picker=document.getElementById('type-picker');
   if(!picker.contains(e.target))picker.classList.remove('open');
+  const em=document.getElementById('export-menu'),emb=document.getElementById('export-menu-btn');
+  if(em&&emb&&!em.contains(e.target)&&!emb.contains(e.target))em.classList.remove('open');
   const sp=document.getElementById('settings-panel'),sb=document.getElementById('settings-btn');
   if(sp.classList.contains('open')&&!sp.contains(e.target)&&!sb.contains(e.target)){sp.classList.remove('open');sb.classList.remove('active');}
   const cp=document.getElementById('color-picker-popup');
