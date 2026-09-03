@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=b_o--TAyzT4aWJRILO3og-dsr5xyaOC8n9s_D5q90W4Uv5W9xpaLSjoc3eL2seUkddLfP16Xff1F1gMCDSKsUVrZyQ4tb0eRLLCCkYBmsndiLofCvRfE5EvEHUILwW3zcqqIMhkG2h0AY5bPoAz8WqIFCA2p37xqUKuKz_E8aogon-1czI2K7S7k8S3pcP3T2HnN86N48-GraFmM2HLDlJAM2fPNMqUmch00B4p0YySaTmdZ4sqO71Pl3n5yIOO_PRtxqSGAuTI32G4AxHkKICCgd_tk7aWLiXB1HEFxfS-pmAp22ugC1m_Ycm49QgguXq-XVmOaUKrVBM_IuMP1K6x-mDZKHc64kEMV8OMJ9-Y" charset="UTF-8"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -126,7 +126,7 @@
   .block-wrap{position:relative;padding-left:54px;transition:opacity 0.15s;}
   .block-gutter{position:absolute;left:0;bottom:4px;width:3rem;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;}
   .block-wrap:hover .block-gutter{opacity:1;}
-  .gutter-inner{display:flex;flex-direction:row-reverse;gap:3px;align-items:center;flex-wrap:wrap;height:100%;justify-content:begin;}
+  .gutter-inner{display:flex;flex-direction:row-reverse;gap:3px;align-items:center;flex-wrap:wrap;height:100%;justify-content:start;}
   .gutter-btn{width:22px;height:22px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;transition:background 0.1s,color 0.1s;}
   .gutter-btn:hover{background:var(--bg2);color:var(--text);}
   .drag-handle{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px;cursor:grab;transition:color 0.1s;user-select:none;touch-action:none;}
@@ -207,8 +207,8 @@
   .add-dot{width:7px;height:7px;border-radius:50%;}
 
   /* Type picker */
-  #type-picker{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.1);padding:6px;z-index:200;display:none;flex-direction:column;gap:2px;min-width:170px;}
-  #export-menu{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:8px;z-index:250;display:none;flex-direction:column;gap:2px;min-width:220px;}
+  #type-picker{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.1);padding:6px;z-index:450;display:none;flex-direction:column;gap:2px;min-width:170px;}
+  #export-menu{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:8px;z-index:450;display:none;flex-direction:column;gap:2px;min-width:220px;}
   #export-menu.open{display:flex;}
   .export-section-title{font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);padding:4px 8px 2px;}
   .export-opt{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:var(--radius-sm);font-size:13px;color:var(--text2);border:none;background:none;text-align:left;width:100%;cursor:pointer;transition:background 0.12s,color 0.12s;}
@@ -259,8 +259,35 @@
   #writing-area::-webkit-scrollbar-track{background:transparent;}
   #writing-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 
+  #mobile-menu-btn{display:none;background:none;border:none;cursor:pointer;color:var(--text2);font-size:18px;padding:4px 6px;flex-shrink:0;}
+  #mobile-menu-btn:hover{color:var(--text);}
+  #sidebar-scrim{display:none;}
+
   @media (max-width:600px){
-    #sidebar{display:none;}
+    #mobile-menu-btn{display:flex;align-items:center;}
+    #sidebar{
+      display:flex;
+      position:fixed;
+      top:0; left:0; bottom:0;
+      width:85vw;
+      max-width:320px;
+      z-index:400;
+      transform:translateX(-100%);
+      transition:transform 0.25s ease;
+      box-shadow:2px 0 16px rgba(0,0,0,0.25);
+    }
+    #sidebar.mobile-open{transform:translateX(0);}
+    #sidebar.collapsed{width:85vw;max-width:320px;}
+    #sidebar-scrim{
+      display:block;
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.4);
+      z-index:399;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 0.25s ease;
+    }
+    #sidebar-scrim.show{opacity:1;pointer-events:auto;}
     #editor{padding:0 0.5rem;}
     #settings-panel{width:100%;}
   }
@@ -268,9 +295,10 @@
 </head>
 <body>
 <div id="shell">
+  <div id="sidebar-scrim" onclick="closeMobileSidebar()"></div>
   <aside id="sidebar">
     <div id="sidebar-top">
-      <input id="project-name" class="hide-collapsed" value="Untitled Story" title="Click to rename"/>
+      <input id="project-name" class="hide-collapsed" value="Untitled Story" title="Click to rename">
       <button id="collapse-btn" title="Collapse sidebar" onclick="toggleSidebar()"><i class="ti ti-layout-sidebar-left-collapse"></i></button>
     </div>
     <div id="sidebar-chapters">
@@ -301,6 +329,7 @@
 
   <main id="main">
     <div id="topbar">
+      <button id="mobile-menu-btn" title="Menu" onclick="openMobileSidebar()"><i class="ti ti-menu-2"></i></button>
       <div class="tb-group">
         <button class="tb-btn active" id="view-normal" onclick="setView('normal')">Normal</button>
         <button class="tb-btn" id="view-focus" onclick="setView('focus')">Focus</button>
@@ -370,19 +399,19 @@
   <div class="export-section-title">Format</div>
   <button class="export-opt" onclick="doExport('zip')">
     <i class="ti ti-file-zip"></i>
-    <div><div>ZIP folder</div><div class="export-opt-sub">TXT + images</div></div>
+    <span><span>ZIP folder</span><span class="export-opt-sub">TXT + images</span></span>
   </button>
   <button class="export-opt" onclick="doExport('txt')">
     <i class="ti ti-file-text"></i>
-    <div><div>Plain text</div><div class="export-opt-sub">TXT only, no images</div></div>
+    <span><span>Plain text</span><span class="export-opt-sub">TXT only, no images</span></span>
   </button>
   <button class="export-opt" onclick="doExport('json')">
     <i class="ti ti-braces"></i>
-    <div><div>JSON</div><div class="export-opt-sub">Reimportable — merges on import</div></div>
+    <span><span>JSON</span><span class="export-opt-sub">Reimportable — merges on import</span></span>
   </button>
   <button class="export-opt disabled">
     <i class="ti ti-file-type-pdf"></i>
-    <div><div>PDF <span style="font-size:10px;opacity:0.6">coming soon</span></div><div class="export-opt-sub">Formatted document</div></div>
+    <span><span>PDF <span style="font-size:10px;opacity:0.6">coming soon</span></span><span class="export-opt-sub">Formatted document</span></span>
   </button>
 </div>
 
@@ -690,6 +719,7 @@ function switchChapter(collId,chapId){
   renderSidebar();render();
   const ch=activeChapter();document.getElementById('notes-ta').value=ch?(ch.notes||''):'';
   updateChapTitle();save();
+  if(isMobile())closeMobileSidebar();
 }
 function updateChapTitle(){
   const ch=activeChapter(),coll=activeCollection();
@@ -1122,7 +1152,24 @@ function updateThemeBtn(){
 }
 
 // ── Sidebar toggle ──
-function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
+function isMobile(){return window.matchMedia('(max-width:600px)').matches;}
+function openMobileSidebar(){
+  document.getElementById('sidebar').classList.add('mobile-open');
+  document.getElementById('sidebar-scrim').classList.add('show');
+}
+function closeMobileSidebar(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebar-scrim').classList.remove('show');
+}
+function toggleSidebar(){
+  if(isMobile()){
+    const sb=document.getElementById('sidebar');
+    if(sb.classList.contains('mobile-open'))closeMobileSidebar();
+    else openMobileSidebar();
+    return;
+  }
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
 
 // ── Settings ──
 function loadSettings(){const s=localStorage.getItem('nw-settings');if(s){try{settings={...settings,...JSON.parse(s)};}catch(e){}}}
