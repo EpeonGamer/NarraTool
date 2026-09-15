@@ -7,8 +7,60 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link id="icon-font-css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" onerror="iconFontFailed()">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+  // ── Offline icon fallback ──
+  // The Tabler icon font is loaded from a CDN. If it can't be reached (offline,
+  // blocked, CDN down), fall back to plain-text/emoji glyphs so buttons never
+  // render as empty boxes. Detection runs via the font-loading API with a
+  // timeout, backed up by the stylesheet's own onerror handler.
+  var __iconFontOk = false;
+  function applyIconFallback(){
+    document.documentElement.classList.add('icons-fallback');
+  }
+  function clearIconFallback(){
+    __iconFontOk = true;
+    document.documentElement.classList.remove('icons-fallback');
+  }
+  function iconFontFailed(){ if(!__iconFontOk) applyIconFallback(); }
+  function checkIconFontNow(){
+    try{
+      return !!(document.fonts && document.fonts.check && document.fonts.check('16px "tabler-icons"'));
+    }catch(e){ return false; }
+  }
+  (function(){
+    if(navigator.onLine === false){ applyIconFallback(); return; }
+    if(!(window.document && document.fonts)){
+      // No Font Loading API to verify with — assume the stylesheet's own
+      // onerror handler will catch real failures, don't guess further.
+      return;
+    }
+    // Poll instead of a single check: the @font-face rule and the actual font
+    // file can both still be mid-download for a bit after the page loads, so
+    // a one-shot check right away is unreliable and can false-positive.
+    var attempts = 0, maxAttempts = 25; // ~5s of polling at 200ms
+    var poll = setInterval(function(){
+      attempts++;
+      if(checkIconFontNow()){
+        clearIconFallback();
+        clearInterval(poll);
+        return;
+      }
+      if(attempts >= maxAttempts){
+        clearInterval(poll);
+        if(!__iconFontOk) applyIconFallback();
+        // Keep checking in the background in case a slow connection catches
+        // up later — self-heal rather than stay stuck on emoji fallback.
+        var recover = setInterval(function(){
+          if(checkIconFontNow()){ clearIconFallback(); clearInterval(recover); }
+        },1500);
+        setTimeout(function(){ clearInterval(recover); },20000);
+      }
+    },200);
+  })();
+  window.addEventListener('offline', applyIconFallback);
+</script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -28,6 +80,46 @@
     --action-accent:#97C459; --thought-accent:#AFA9EC; --scene-accent:#ED93B1;
   }
   html,body{height:100%;background:var(--bg3);color:var(--text);font-family:var(--sans);}
+
+  /* ── Offline icon fallback ──
+     When the Tabler icon font can't be reached, .icons-fallback is added to
+     <html> and every icon glyph below is swapped for a plain-text/emoji
+     equivalent drawn from system fonts (always available offline). */
+  html.icons-fallback .ti,
+  html.icons-fallback [class*="ti-"]{
+    font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",var(--sans)!important;
+    font-style:normal!important;
+  }
+  html.icons-fallback .ti-adjustments-horizontal:before{content:"⚙"!important;}
+  html.icons-fallback .ti-braces:before{content:"{ }"!important;}
+  html.icons-fallback .ti-chevron-down:before{content:"▾"!important;}
+  html.icons-fallback .ti-chevron-right:before{content:"▸"!important;}
+  html.icons-fallback .ti-chevron-up:before{content:"▴"!important;}
+  html.icons-fallback .ti-dots:before{content:"⋯"!important;}
+  html.icons-fallback .ti-file-text:before{content:"📄"!important;}
+  html.icons-fallback .ti-file-type-pdf:before{content:"📕"!important;}
+  html.icons-fallback .ti-file-zip:before{content:"🗜"!important;}
+  html.icons-fallback .ti-grip-vertical:before{content:"⋮⋮"!important;letter-spacing:-2px!important;}
+  html.icons-fallback .ti-layout-sidebar-left-collapse:before{content:"⇤"!important;}
+  html.icons-fallback .ti-menu-2:before{content:"☰"!important;}
+  html.icons-fallback .ti-moon:before{content:"🌙"!important;}
+  html.icons-fallback .ti-notes:before{content:"📝"!important;}
+  html.icons-fallback .ti-package-export:before{content:"📤"!important;}
+  html.icons-fallback .ti-photo:before{content:"🖼"!important;}
+  html.icons-fallback .ti-plus:before{content:"+"!important;}
+  html.icons-fallback .ti-sun:before{content:"☀"!important;}
+  html.icons-fallback .ti-trash:before{content:"🗑"!important;}
+  html.icons-fallback .ti-txt:before{content:"📄"!important;}
+  html.icons-fallback .ti-upload:before{content:"⬆"!important;}
+  html.icons-fallback .ti-x:before{content:"✕"!important;}
+  html.icons-fallback .ti-books:before{content:"📚"!important;}
+  html.icons-fallback .ti-users:before{content:"👥"!important;}
+  html.icons-fallback .ti-map:before{content:"🗺"!important;}
+  html.icons-fallback .ti-bulb:before{content:"💡"!important;}
+  html.icons-fallback .ti-clipboard:before{content:"📋"!important;}
+  html.icons-fallback .ti-planet:before{content:"🪐"!important;}
+  html.icons-fallback .ti-sword:before{content:"⚔"!important;}
+  html.icons-fallback .ti-flask:before{content:"🧪"!important;}
   #eye-widget{--eye-white:#fff;--eye-rim:#c0c0c0;--eye-pupil:#1a1a18;--eye-glint:#fff;}
   .nw-eye{display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.18));transition:transform 0.08s;}
   #shell{display:flex;height:100vh;}
@@ -75,6 +167,13 @@
   .chap-btn{width:18px;height:18px;border-radius:4px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;transition:background 0.1s,color 0.1s;}
   .chap-btn:hover{background:var(--bg3);color:var(--text);}
   .chap-btn.danger:hover{color:#993C1D;background:#FAECE7;}
+  .chap-drag-handle{width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:11px;cursor:grab;transition:color 0.1s;user-select:none;touch-action:none;flex-shrink:0;visibility:hidden;}
+  .chapter-item:hover .chap-drag-handle{visibility:visible;}
+  .chap-drag-handle:active{cursor:grabbing;}
+  .chap-drag-handle:hover{color:var(--text);}
+  .chapter-item.dragging{opacity:0.3;}
+  .chapter-drop-zone{height:4px;border-radius:2px;margin:0 12px 0 26px;background:transparent;transition:background 0.15s;pointer-events:none;}
+  .chapter-drop-zone.active{background:var(--prose-accent);}
   .add-chapter-row{display:flex;align-items:center;gap:6px;padding:4px 12px 6px 26px;cursor:pointer;color:var(--text3);font-size:12px;transition:color 0.15s;}
   .add-chapter-row:hover{color:var(--text);}
   .add-chapter-row i{font-size:12px;}
@@ -504,6 +603,7 @@ let nextCollId=0, nextChapterId=0, nextBlockId=0;
 let viewMode='normal', showLabels=true, focusedId=null;
 let pickerTargetId=null, saveTimer=null;
 let dragId=null, dragOverIndex=null;
+let chapDragId=null, chapDragOverIndex=null, chapDragCollId=null;
 let settings={fontSize:17,width:'medium',lineHeight:'normal',eyes:true,eyeOrientation:'vertical'};
 let pendingImageBlockId=null; // which block is waiting for file input
 
@@ -540,7 +640,7 @@ function init(){
   if(theme==='dark')document.documentElement.dataset.theme='dark';
   updateThemeBtn();
   buildColorPicker();
-  renderSidebar();render();applyAllSettings();initDrag();
+  renderSidebar();render();applyAllSettings();initDrag();initChapterDrag();
   document.getElementById('project-name').addEventListener('input',scheduleSave);
   document.getElementById('notes-ta').addEventListener('input',()=>{
     const ch=activeChapter();if(ch)ch.notes=document.getElementById('notes-ta').value;
@@ -611,11 +711,15 @@ function renderSidebar(){
     });
     const chapList=document.createElement('div');
     chapList.className='collection-chapters hide-collapsed';
-    coll.chapters.forEach(ch=>{
+    coll.chapters.forEach((ch,ci)=>{
+      const dz=document.createElement('div');
+      dz.className='chapter-drop-zone';dz.dataset.dropIndex=ci;
+      chapList.appendChild(dz);
       const item=document.createElement('div');
       item.className='chapter-item'+(ch.id===activeChapterId?' active':'');
       item.dataset.id=ch.id;
       item.innerHTML=`
+        <div class="chap-drag-handle" title="Drag to reorder" data-chap-drag="${ch.id}" data-chap-drag-coll="${coll.id}"><i class="ti ti-grip-vertical"></i></div>
         <i class="ti ti-file-text chap-icon"></i>
         <div class="chap-name" title="Right-click to rename">${escHtml(ch.name)}</div>
         <div class="chap-actions">
@@ -624,7 +728,7 @@ function renderSidebar(){
           <button class="chap-btn danger" title="Delete" onclick="deleteChapter(${coll.id},${ch.id},this)"><i class="ti ti-trash"></i></button>
         </div>`;
       item.addEventListener('click',e=>{
-        if(e.target.closest('.chap-btn')||e.target.closest('.chap-name[contenteditable="true"]'))return;
+        if(e.target.closest('.chap-btn')||e.target.closest('.chap-drag-handle')||e.target.closest('.chap-name[contenteditable="true"]'))return;
         switchChapter(coll.id,ch.id);
       });
       item.querySelector('.chap-name').addEventListener('contextmenu',e=>{
@@ -633,6 +737,9 @@ function renderSidebar(){
       });
       chapList.appendChild(item);
     });
+    const lastDz=document.createElement('div');
+    lastDz.className='chapter-drop-zone';lastDz.dataset.dropIndex=coll.chapters.length;
+    chapList.appendChild(lastDz);
     const addRow=document.createElement('div');
     addRow.className='add-chapter-row hide-collapsed';
     addRow.innerHTML=`<i class="ti ti-plus"></i><span>Add chapter</span>`;
@@ -1092,6 +1199,58 @@ function endDrag(){
   }
   dragId=null;dragOverIndex=null;
   document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('active'));
+}
+
+// ── Chapter drag (sidebar) ──
+function initChapterDrag(){
+  const list=document.getElementById('collection-list');
+  list.addEventListener('mousedown',e=>{
+    const h=e.target.closest('[data-chap-drag]');if(!h)return;
+    e.preventDefault();e.stopPropagation();
+    startChapDrag(parseInt(h.dataset.chapDrag),parseInt(h.dataset.chapDragColl));
+    document.addEventListener('mousemove',onChapMouseMove);
+    document.addEventListener('mouseup',()=>{document.removeEventListener('mousemove',onChapMouseMove);endChapDrag();},{once:true});
+  });
+  list.addEventListener('touchstart',e=>{
+    const h=e.target.closest('[data-chap-drag]');if(!h)return;
+    startChapDrag(parseInt(h.dataset.chapDrag),parseInt(h.dataset.chapDragColl));
+    list.addEventListener('touchmove',onChapTouchMove,{passive:false});
+    list.addEventListener('touchend',()=>{list.removeEventListener('touchmove',onChapTouchMove);endChapDrag();},{once:true});
+  },{passive:true});
+}
+function startChapDrag(id,collId){
+  chapDragId=id;chapDragCollId=collId;
+  const item=document.querySelector(`.chapter-item[data-id="${chapDragId}"]`);
+  if(item)item.classList.add('dragging');
+}
+function onChapMouseMove(e){updateChapDropTarget(e.clientX,e.clientY);}
+function onChapTouchMove(e){if(chapDragId===null)return;e.preventDefault();const t=e.touches[0];updateChapDropTarget(t.clientX,t.clientY);}
+function updateChapDropTarget(x,y){
+  if(chapDragId===null)return;
+  const group=document.querySelector(`.collection-group[data-id="${chapDragCollId}"]`);
+  if(!group)return;
+  const zones=group.querySelectorAll('.chapter-drop-zone');
+  let closest=null,closestDist=Infinity;
+  zones.forEach(z=>{const rect=z.getBoundingClientRect();const dist=Math.abs(y-(rect.top+rect.height/2));if(dist<closestDist){closestDist=dist;closest=z;}});
+  document.querySelectorAll('.chapter-drop-zone').forEach(z=>z.classList.remove('active'));
+  if(closest){closest.classList.add('active');chapDragOverIndex=parseInt(closest.dataset.dropIndex);}
+}
+function endChapDrag(){
+  const item=document.querySelector(`.chapter-item[data-id="${chapDragId}"]`);
+  if(item)item.classList.remove('dragging');
+  if(chapDragOverIndex!==null&&chapDragCollId!==null){
+    const coll=collections.find(c=>c.id===chapDragCollId);
+    if(coll){
+      const from=coll.chapters.findIndex(ch=>ch.id===chapDragId);
+      if(from!==-1){
+        const[moved]=coll.chapters.splice(from,1);
+        const to=chapDragOverIndex>from?chapDragOverIndex-1:chapDragOverIndex;
+        coll.chapters.splice(to,0,moved);renderSidebar();save();
+      }
+    }
+  }
+  chapDragId=null;chapDragOverIndex=null;chapDragCollId=null;
+  document.querySelectorAll('.chapter-drop-zone').forEach(z=>z.classList.remove('active'));
 }
 
 // ── Type picker ──
