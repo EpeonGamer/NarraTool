@@ -1786,10 +1786,16 @@ document.addEventListener('click',e=>{
     requestAnimationFrame(frame);
   }
 
-  requestAnimationFrame(frame);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      init();
+      requestAnimationFrame(frame);
+    });
+  } else {
+    init();
+    requestAnimationFrame(frame);
+  }
 })();
-
-init();
 </script>
 </body>
 </html>
