@@ -29,13 +29,15 @@
       return !!(document.fonts && document.fonts.check && document.fonts.check('16px "tabler-icons"'));
     }catch(e){ return false; }
   }
-  (function(){
-    if(navigator.onLine === false){ applyIconFallback(); return; }
+  var __iconPollActive = false;
+  function pollForIconFont(){
+    if(__iconPollActive) return; // don't stack multiple polling loops
     if(!(window.document && document.fonts)){
       // No Font Loading API to verify with — assume the stylesheet's own
       // onerror handler will catch real failures, don't guess further.
       return;
     }
+    __iconPollActive = true;
     // Poll instead of a single check: the @font-face rule and the actual font
     // file can both still be mid-download for a bit after the page loads, so
     // a one-shot check right away is unreliable and can false-positive.
@@ -45,10 +47,12 @@
       if(checkIconFontNow()){
         clearIconFallback();
         clearInterval(poll);
+        __iconPollActive = false;
         return;
       }
       if(attempts >= maxAttempts){
         clearInterval(poll);
+        __iconPollActive = false;
         if(!__iconFontOk) applyIconFallback();
         // Keep checking in the background in case a slow connection catches
         // up later — self-heal rather than stay stuck on emoji fallback.
@@ -58,8 +62,39 @@
         setTimeout(function(){ clearInterval(recover); },20000);
       }
     },200);
+  }
+  function retryIconStylesheet(){
+    var oldLink = document.getElementById('icon-font-css');
+    if(!oldLink) return;
+    var newLink = oldLink.cloneNode();
+    var base = oldLink.href.split('?')[0];
+    newLink.href = base + '?retry=' + Date.now(); // bust any cached failure
+    newLink.onerror = iconFontFailed;
+    oldLink.parentNode.replaceChild(newLink, oldLink);
+  }
+  (function(){
+    if(navigator.onLine === false){ applyIconFallback(); return; }
+    pollForIconFont();
   })();
   window.addEventListener('offline', applyIconFallback);
+  // ── Recovery on reconnect ──
+  // 'offline' puts us into emoji mode, but a failed <link> request doesn't
+  // auto-retry just because connectivity comes back (e.g. after the laptop
+  // wakes from sleep) — and nothing was previously listening for 'online'
+  // at all, so the fallback could get stuck on even once back online.
+  window.addEventListener('online', function(){
+    if(__iconFontOk) return; // already fine, nothing to recover
+    retryIconStylesheet();
+    pollForIconFont();
+  });
+  // Some OSes/browsers don't reliably fire offline/online events around
+  // sleep/wake. Re-verify whenever the tab becomes visible again too.
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible' && !__iconFontOk && navigator.onLine !== false){
+      retryIconStylesheet();
+      pollForIconFont();
+    }
+  });
 </script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
