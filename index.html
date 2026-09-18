@@ -139,6 +139,10 @@
   html.icons-fallback .ti-planet:before{content:"🪐"!important;}
   html.icons-fallback .ti-sword:before{content:"⚔"!important;}
   html.icons-fallback .ti-flask:before{content:"🧪"!important;}
+  html.icons-fallback .ti-device-floppy:before{content:"💾"!important;}
+  html.icons-fallback .ti-alert-triangle:before{content:"⚠"!important;}
+  html.icons-fallback .ti-circle-check-filled:before{content:"✓"!important;}
+  html.icons-fallback .ti-cloud-off:before{content:"☁"!important;}
   #eye-widget{--eye-white:#fff;--eye-rim:#c0c0c0;--eye-pupil:#1a1a18;--eye-glint:#fff;}
   .nw-eye{display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.18));transition:transform 0.08s;}
   #shell{display:flex;height:100vh;}
@@ -193,7 +197,7 @@
   .coll-btn.danger:hover{color:#993C1D;background:#FAECE7;}
   .collection-chapters{display:none;}
   .collection-group.open .collection-chapters{display:block;}
-  .chapter-item{display:flex;align-items:center;gap:6px;padding:5px 12px 5px 26px;cursor:pointer;border-left:2px solid transparent;transition:background 0.15s;position:relative;}
+  .chapter-item{display:flex;align-items:center;gap:6px;padding:0px 12px 4px 26px;cursor:pointer;border-left:2px solid transparent;transition:background 0.15s;position:relative;}
   .chapter-item:hover{background:var(--bg2);}
   .chapter-item.active{background:var(--bg2);border-left-color:var(--prose-accent);}
   .chapter-item.active .chap-name{color:var(--text);font-weight:500;}
@@ -227,6 +231,15 @@
   .side-btn{display:flex;align-items:center;gap:10px;padding:5px 12px;font-size:13px;color:var(--text2);cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:background 0.15s,color 0.15s;}
   .side-btn:hover{background:var(--bg2);color:var(--text);}
   .side-btn i{font-size:15px;flex-shrink:0;}
+  #backup-status-btn .side-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #backup-status-btn.b-connected i{color:#5B9E5B;}
+  #backup-status-btn.b-reconnect i{color:#C98A2E;}
+  #backup-status-btn.b-reconnect{color:#C98A2E;}
+  #backup-status-btn.b-unsupported i{color:var(--text3);}
+  .icon-badge-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .save-dot{position:absolute;top:-3px;right:-4px;width:6px;height:6px;border-radius:50%;background:transparent;border:1.5px solid var(--bg);transition:background 0.15s;}
+  .save-dot.stale{background:#C98A2E;}
+  #sidebar.collapsed .save-dot{border-color:var(--bg);}
   .side-label{flex:1;}
 
   /* ── Main ── */
@@ -328,9 +341,9 @@
 
   /* ── Inline markdown (live-preview style) ── */
   .md-mark{opacity:0.32;font-style:normal!important;font-weight:400!important;}
-  /* Link syntax is hidden until the caret touches that link, Obsidian-style. */
-  .md-mark.md-link-mark{font-size:0;opacity:0;}
-  .md-link-mark-revealed{font-size:inherit!important;opacity:.45!important;}
+  /* **/*/[[ ]] syntax is hidden until the caret touches it, Obsidian-style. */
+  .md-mark.md-mark-hidden{font-size:0;opacity:0;}
+  .md-mark.md-mark-hidden.md-mark-revealed{font-size:inherit!important;opacity:.45!important;}
   .md-bold b{font-weight:700;}
   .md-italic i{font-style:italic;}
   .md-link{color:var(--prose-accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb, var(--prose-accent) 40%, transparent);cursor:text;}
@@ -350,7 +363,10 @@
   .chap-tag-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,0.08);}
 
   /* ── Chapter metadata ── */
-  #chapter-meta{margin-bottom:1.1rem;padding:10px 12px 12px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);display:flex;flex-direction:column;gap:10px;}
+  /* margin-left matches .block-wrap's 54px left gutter so this card's edges
+     line up with the scene/paragraph blocks below it instead of sticking
+     out further left. */
+  #chapter-meta{margin-bottom:1.1rem;margin-left:54px;padding:10px 12px 12px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);display:flex;flex-direction:column;gap:10px;}
   #chapter-meta.collapsed{gap:0;}
   #chapter-meta.collapsed .chapter-meta-body{display:none;}
   .chapter-meta-toggle{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;color:var(--text2);cursor:pointer;text-align:left;padding:0;}
@@ -360,9 +376,14 @@
   .chapter-meta-summary{margin-left:auto;font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .chapter-meta-body{display:flex;flex-direction:column;gap:10px;}
   .chapter-notes-row{align-items:flex-start;}
-  #chapter-notes-edit{width:100%;min-height:90px;resize:vertical;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;background:var(--bg2);color:var(--text);font:13px/1.6 var(--sans);outline:none;}
+  #chapter-notes-edit{display:block;width:100%;min-height:90px;max-height:340px;resize:vertical;overflow-y:auto;overflow-x:hidden;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;background:var(--bg2);color:var(--text);font:13px/1.6 var(--sans);outline:none;white-space:pre-wrap;word-wrap:break-word;cursor:text;}
   #chapter-notes-edit:focus{border-color:var(--prose-accent);}
-  #chapter-notes-edit::placeholder{color:var(--text3);}
+  #chapter-notes-edit:empty::before{content:attr(data-placeholder);color:var(--text3);pointer-events:none;}
+  #chapter-notes-edit::-webkit-scrollbar{width:5px;}
+  #chapter-notes-edit::-webkit-scrollbar-track{background:transparent;}
+  #chapter-notes-edit::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+  #chapter-notes-edit::-webkit-scrollbar-thumb:hover{background:var(--text3);}
+  #chapter-notes-edit{scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
   .chapter-custom-type-input{min-width:130px;max-width:180px;}
   .chapter-meta-title-row{display:flex;align-items:baseline;gap:10px;min-width:0;}
   .chapter-name-edit{flex:1;min-width:0;border:0;background:transparent;outline:none;color:var(--text);font:500 24px/1.25 var(--serif);padding:0;}
@@ -444,6 +465,19 @@
   .confirm-no:hover{background:var(--bg2);}
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:var(--bg);font-size:13px;padding:8px 18px;border-radius:20px;transition:transform 0.3s;z-index:300;pointer-events:none;}
   #toast.show{transform:translateX(-50%) translateY(0);}
+  #backup-nudge{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(140px);display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);box-shadow:0 6px 24px rgba(0,0,0,0.18);border-radius:var(--radius);padding:10px 10px 10px 14px;font-size:13px;color:var(--text);z-index:310;max-width:min(92vw,440px);transition:transform 0.3s ease;pointer-events:none;}
+  #backup-nudge.show{transform:translateX(-50%) translateY(0);pointer-events:auto;}
+  #backup-nudge i.ti-device-floppy{font-size:18px;color:var(--text2);flex-shrink:0;}
+  #backup-nudge .bn-text{flex:1;line-height:1.35;}
+  #backup-nudge button{border:none;background:var(--bg3);color:var(--text);font-size:12px;padding:6px 10px;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;transition:background 0.15s;}
+  #backup-nudge button:hover{background:var(--bg2);}
+  #backup-nudge .bn-export{background:var(--text);color:var(--bg);}
+  #backup-nudge .bn-export:hover{opacity:0.88;background:var(--text);}
+  #backup-nudge .bn-close{background:none;padding:4px;color:var(--text3);font-size:13px;}
+  @media (max-width:600px){
+    #backup-nudge{flex-wrap:wrap;bottom:16px;}
+    #backup-nudge .bn-text{flex-basis:100%;}
+  }
 
   #writing-area::-webkit-scrollbar{width:6px;}
   #writing-area::-webkit-scrollbar-track{background:transparent;}
@@ -507,6 +541,9 @@
         <div class="stat-row"><span class="stat-label">Read time</span><span class="stat-val" id="rt">0 min</span></div>
         <div class="stat-total" id="total-wc"></div>
       </div>
+      <button class="side-btn" id="backup-status-btn" onclick="handleBackupClick()" title="Local backup status">
+        <span class="icon-badge-wrap"><i class="ti ti-device-floppy" id="backup-status-icon"></i><span class="save-dot" id="save-status-dot" title="Unsaved changes"></span></span><span class="side-label hide-collapsed" id="backup-status-label">Checking backup…</span>
+      </button>
       <button class="side-btn" id="export-menu-btn" onclick="toggleExportMenu(event)"><i class="ti ti-package-export"></i><span class="side-label hide-collapsed">Export…</span></button>
       <button class="side-btn" onclick="importJson()"><i class="ti ti-upload"></i><span class="side-label hide-collapsed">Import .json</span></button>
       <input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
@@ -563,7 +600,7 @@
               </div>
               <div class="chapter-meta-row chapter-notes-row">
                 <label class="chapter-meta-label" for="chapter-notes-edit">Notes</label>
-                <textarea id="chapter-notes-edit" placeholder="Notes, reminders, character details for this chapter…" aria-label="Chapter notes"></textarea>
+                <div id="chapter-notes-edit" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Notes, reminders, character details for this chapter…" aria-label="Chapter notes"></div>
               </div>
             </div>
           </div>
@@ -699,6 +736,13 @@
   </div>
 </div>
 <div id="toast"></div>
+<div id="backup-nudge">
+  <i class="ti ti-device-floppy"></i>
+  <span class="bn-text">It's been a while since you exported a backup — this browser can't auto-save to disk, so a stray cache clear could lose your work.</span>
+  <button class="bn-export" onclick="exportFromNudge()">Export .json</button>
+  <button onclick="dismissBackupNudge(true)">Later</button>
+  <button class="bn-close" onclick="dismissBackupNudge(false)" title="Dismiss"><i class="ti ti-x"></i></button>
+</div>
 
 <script>
 // ── Constants ──
@@ -728,6 +772,16 @@ let chapDragId=null, chapDragOverIndex=null, chapDragCollId=null;
 let settings={fontSize:17,width:'medium',lineHeight:'normal',eyes:true,eyeOrientation:'vertical'};
 let pendingImageBlockId=null; // which block is waiting for file input
 
+// ── Undo / redo ──
+// Whole-state snapshots, kept in memory only (never persisted to localStorage
+// or exported files, so they can never bloat saved/exported file size).
+// The array is hard-capped so memory use can't grow without bound either —
+// the oldest snapshot is dropped whenever a new one would exceed the cap.
+let undoStack=[],redoStack=[];
+const UNDO_LIMIT=50;
+let applyingUndo=false;
+let textEditOpen=false,textEditTimer=null;
+
 // ── Helpers ──
 function allChapters(){return collections.flatMap(c=>c.chapters);}
 function activeChapter(){return allChapters().find(ch=>ch.id===activeChapterId);}
@@ -739,8 +793,331 @@ function save(){
   localStorage.setItem('nw-active-ch',activeChapterId);
   localStorage.setItem('nw-active-coll',activeCollId);
   localStorage.setItem('nw-name',document.getElementById('project-name').value);
+  mirrorToLocalFile();
+  markSaved();
 }
-function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,800);}
+function scheduleSave(){
+  clearTimeout(saveTimer);saveTimer=setTimeout(save,800);
+  if(!localBackupSupported)editsSinceExport++;
+  markStale();
+}
+
+// ── Save status (stale/saved indicator) ──
+let saveStatus='saved'; // 'saved'|'stale' — whether the in-browser save has caught up with the latest edit
+function markStale(){
+  if(saveStatus==='stale')return;
+  saveStatus='stale';
+  updateSaveStatusUI();
+}
+function markSaved(){
+  saveStatus='saved';
+  updateSaveStatusUI();
+}
+function updateSaveStatusUI(){
+  const dot=document.getElementById('save-status-dot');
+  if(dot){
+    dot.classList.toggle('stale',saveStatus==='stale');
+    dot.title=saveStatus==='stale'?'Unsaved changes \u2014 Ctrl+S to save now':'All changes saved';
+  }
+  applyBackupTitle();
+}
+// Ctrl/Cmd+S: flush the debounced save immediately instead of waiting ~800ms,
+// and warn when there's nowhere on disk for it to actually land.
+function manualSave(){
+  clearTimeout(saveTimer);
+  save();
+  if(!localBackupSupported){
+    toast('Saved in this browser \u2014 no local file backup available here. Export a .json now and then to be safe.');
+  }else if(localBackupStatus==='connected'){
+    toast('Saved \u2014 mirroring to local file');
+  }else if(localBackupStatus==='reconnect'){
+    toast('Saved in this browser \u2014 reconnect the backup file to mirror to disk');
+  }else{
+    toast('Saved in this browser \u2014 no local backup file connected');
+  }
+}
+
+// ── Storage strategy: protection against data loss ──
+// Chrome/Edge (File System Access API available): writes are mirrored to a
+// local file on disk the user picks once. The handle itself is reusable
+// across reloads (stored in IndexedDB — handles are structured-cloneable),
+// but browsers require a fresh user gesture to re-grant write permission
+// each session, so a "Reconnect" click is needed once per session rather
+// than a full re-pick of the file.
+// Firefox/Safari (no File System Access API): nothing can write outside the
+// browser sandbox, so instead we nudge the user to export a .json now and
+// then, since that's the only thing that survives a cache clear there.
+const localBackupSupported=!!(window.showSaveFilePicker);
+let localBackupHandle=null;
+let localBackupStatus=localBackupSupported?'checking':'unsupported'; // checking|disconnected|reconnect|connected|unsupported
+let localBackupWriting=false,localBackupPending=false;
+
+const NW_IDB_NAME='nw-fs-handles',NW_IDB_STORE='handles';
+function idbOpen(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(NW_IDB_NAME,1);
+    req.onupgradeneeded=()=>{req.result.createObjectStore(NW_IDB_STORE);};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function idbSet(key,val){
+  const db=await idbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(NW_IDB_STORE,'readwrite');
+    tx.objectStore(NW_IDB_STORE).put(val,key);
+    tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);
+  });
+}
+async function idbGet(key){
+  const db=await idbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(NW_IDB_STORE,'readonly');
+    const req=tx.objectStore(NW_IDB_STORE).get(key);
+    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  });
+}
+async function idbDel(key){
+  const db=await idbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(NW_IDB_STORE,'readwrite');
+    tx.objectStore(NW_IDB_STORE).delete(key);
+    tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);
+  });
+}
+
+async function initLocalBackup(){
+  if(!localBackupSupported){updateBackupUI();return;}
+  try{
+    const handle=await idbGet('project-file');
+    if(!handle){localBackupStatus='disconnected';updateBackupUI();return;}
+    localBackupHandle=handle;
+    const perm=await handle.queryPermission({mode:'readwrite'});
+    if(perm==='granted'){
+      localBackupStatus='connected';updateBackupUI();
+      mirrorToLocalFile(); // catch up in case anything changed since last session
+    }else{
+      localBackupStatus='reconnect';updateBackupUI();
+    }
+  }catch(e){
+    console.error('Local backup init failed',e);
+    localBackupStatus='disconnected';updateBackupUI();
+  }
+}
+
+async function connectLocalBackup(){
+  if(!localBackupSupported)return;
+  try{
+    const suggested=(document.getElementById('project-name').value||'story').replace(/[^a-z0-9_\-\s]/gi,'_')+'.json';
+    const handle=await window.showSaveFilePicker({
+      suggestedName:suggested,
+      types:[{description:'Narrative Writer backup',accept:{'application/json':['.json']}}]
+    });
+    localBackupHandle=handle;
+    await idbSet('project-file',handle);
+    localBackupStatus='connected';updateBackupUI();
+    await mirrorToLocalFile();
+    toast('Local backup connected \u2014 changes will mirror to this file');
+  }catch(e){
+    if(e.name!=='AbortError'){toast('Could not connect a backup file');console.error(e);}
+  }
+}
+
+async function reconnectLocalBackup(){
+  if(!localBackupHandle)return;
+  try{
+    const perm=await localBackupHandle.requestPermission({mode:'readwrite'});
+    if(perm==='granted'){
+      localBackupStatus='connected';updateBackupUI();
+      await mirrorToLocalFile();
+      toast('Local backup reconnected');
+    }else{
+      toast('Permission was not granted \u2014 backup file stays disconnected');
+    }
+  }catch(e){toast('Could not reconnect the backup file');console.error(e);}
+}
+
+function disconnectLocalBackup(){
+  confirm('Stop mirroring writes to the local backup file? Your work stays saved in this browser either way.','Disconnect',async()=>{
+    localBackupHandle=null;
+    localBackupStatus='disconnected';
+    try{await idbDel('project-file');}catch(e){}
+    updateBackupUI();
+    toast('Local backup disconnected');
+  });
+}
+
+async function mirrorToLocalFile(){
+  if(!localBackupSupported||localBackupStatus!=='connected'||!localBackupHandle)return;
+  if(localBackupWriting){localBackupPending=true;return;}
+  localBackupWriting=true;
+  try{
+    const name=document.getElementById('project-name').value||'story';
+    const data=JSON.stringify({name,collections},null,2);
+    const writable=await localBackupHandle.createWritable();
+    await writable.write(data);
+    await writable.close();
+  }catch(e){
+    console.error('Local backup write failed',e);
+    // Permission revoked, file moved/deleted, etc. — surface it rather than
+    // silently failing to protect data.
+    localBackupStatus='reconnect';updateBackupUI();
+    toast('Local backup write failed \u2014 reconnect needed');
+  }finally{
+    localBackupWriting=false;
+    if(localBackupPending){localBackupPending=false;mirrorToLocalFile();}
+  }
+}
+
+let backupBaseTitle='';
+function updateBackupUI(){
+  const btn=document.getElementById('backup-status-btn');
+  const icon=document.getElementById('backup-status-icon');
+  const label=document.getElementById('backup-status-label');
+  if(!btn)return;
+  btn.classList.remove('b-connected','b-reconnect','b-unsupported');
+  icon.className='ti ti-device-floppy';
+  if(localBackupStatus==='unsupported'){
+    btn.classList.add('b-unsupported');
+    icon.className='ti ti-cloud-off';
+    label.textContent='No auto-backup here';
+    backupBaseTitle='This browser can\'t mirror writes to a local file. Click to export a .json backup now.';
+  }else if(localBackupStatus==='checking'){
+    label.textContent='Checking backup\u2026';
+    backupBaseTitle='Checking local backup status\u2026';
+  }else if(localBackupStatus==='disconnected'){
+    label.textContent='Connect local backup';
+    backupBaseTitle='Pick a file on disk to mirror every change to, as protection against data loss.';
+  }else if(localBackupStatus==='reconnect'){
+    btn.classList.add('b-reconnect');
+    icon.className='ti ti-alert-triangle';
+    label.textContent='Reconnect backup file';
+    backupBaseTitle='Your browser needs a fresh click to re-grant write access to the backup file this session.';
+  }else if(localBackupStatus==='connected'){
+    btn.classList.add('b-connected');
+    icon.className='ti ti-circle-check-filled';
+    label.textContent='Local backup on';
+    backupBaseTitle='Every change is mirrored to your backup file on disk. Click to change or disconnect it.';
+  }
+  applyBackupTitle();
+}
+// Composes the connection-status title (above) with the stale/saved suffix
+// (from updateSaveStatusUI) so neither overwrites the other.
+function applyBackupTitle(){
+  const btn=document.getElementById('backup-status-btn');
+  if(!btn||!backupBaseTitle)return;
+  const suffix=saveStatus==='stale'?' \u2014 unsaved changes':' \u2014 all changes saved';
+  btn.title=backupBaseTitle+suffix;
+}
+
+function handleBackupClick(){
+  if(localBackupStatus==='unsupported'){
+    toast('Auto-backup isn\u2019t available here \u2014 exporting .json instead');
+    setExportScope('all');doExport('json');return;
+  }
+  if(localBackupStatus==='disconnected')return connectLocalBackup();
+  if(localBackupStatus==='reconnect')return reconnectLocalBackup();
+  if(localBackupStatus==='connected')return disconnectLocalBackup();
+}
+
+// ── Firefox/Safari fallback: proactive backup nudges ──
+// No File System Access API means nothing here can write outside the
+// browser's own storage, so localStorage alone is one cache-clear away from
+// losing everything. Instead, nudge toward periodic manual .json exports.
+let editsSinceExport=0,nudgeDismissedThisSession=false,backupNudgeTimer=null;
+const NUDGE_CHECK_MS=60*1000,NUDGE_IDLE_THRESHOLD_MS=15*60*1000,NUDGE_MIN_EDITS=8;
+function startBackupNudgeWatcher(){
+  if(localBackupSupported)return;
+  backupNudgeTimer=setInterval(checkBackupNudge,NUDGE_CHECK_MS);
+}
+function checkBackupNudge(){
+  if(nudgeDismissedThisSession)return;
+  const el=document.getElementById('backup-nudge');
+  if(el.classList.contains('show'))return;
+  const last=parseInt(localStorage.getItem('nw-last-export-at')||'0',10);
+  if(editsSinceExport>=NUDGE_MIN_EDITS&&Date.now()-last>NUDGE_IDLE_THRESHOLD_MS){
+    el.classList.add('show');
+  }
+}
+function dismissBackupNudge(remindLater){
+  document.getElementById('backup-nudge').classList.remove('show');
+  if(remindLater){editsSinceExport=0;}
+  else{nudgeDismissedThisSession=true;}
+}
+function exportFromNudge(){
+  dismissBackupNudge(false);
+  setExportScope('all');doExport('json');
+}
+function markBackupExported(){
+  localStorage.setItem('nw-last-export-at',String(Date.now()));
+  editsSinceExport=0;
+}
+
+// ── Undo / redo core ──
+// Whole-document snapshots. Cheap because the doc already round-trips
+// cleanly through plain JS objects (see doExport) — no per-op inverse
+// functions to write or maintain.
+function snapshotState(){
+  return{
+    collections:JSON.parse(JSON.stringify(collections)),
+    activeChapterId,activeCollId,
+    projectName:document.getElementById('project-name').value
+  };
+}
+function restoreSnapshot(snap){
+  applyingUndo=true;
+  collections=JSON.parse(JSON.stringify(snap.collections));
+  normalizeProjectData();
+  activeChapterId=snap.activeChapterId;
+  activeCollId=snap.activeCollId;
+  if(!allChapters().some(ch=>ch.id===activeChapterId))activeChapterId=allChapters()[0]?.id??null;
+  if(!collections.some(c=>c.id===activeCollId))activeCollId=findChapterCollection(activeChapterId)?.id??collections[0]?.id??null;
+  document.getElementById('project-name').value=snap.projectName||'';
+  renderSidebar();render();updateChapTitle();loadNotesIntoUI(true);
+  save();
+  applyingUndo=false;
+}
+// Force an undo boundary right before a discrete (non-typing) mutation —
+// add/delete/reorder block or chapter, type/color changes, tag edits, etc.
+function pushUndoSnapshot(){
+  if(applyingUndo)return;
+  textEditOpen=false;clearTimeout(textEditTimer);
+  undoStack.push(snapshotState());
+  if(undoStack.length>UNDO_LIMIT)undoStack.shift();
+  redoStack=[];
+}
+// Coalesced boundary for continuous typing: one undo step per ~1s pause,
+// not per keystroke. Call this BEFORE the keystroke is applied to the data
+// model so the pushed snapshot reflects the pre-edit state.
+function noteTextEdit(){
+  if(applyingUndo)return;
+  if(!textEditOpen){
+    undoStack.push(snapshotState());
+    if(undoStack.length>UNDO_LIMIT)undoStack.shift();
+    redoStack=[];
+    textEditOpen=true;
+  }
+  clearTimeout(textEditTimer);
+  textEditTimer=setTimeout(()=>{textEditOpen=false;},1000);
+}
+function performUndo(){
+  if(!undoStack.length){toast('Nothing to undo');return;}
+  const current=snapshotState();
+  const snap=undoStack.pop();
+  redoStack.push(current);
+  if(redoStack.length>UNDO_LIMIT)redoStack.shift();
+  restoreSnapshot(snap);
+  toast('Undo');
+}
+function performRedo(){
+  if(!redoStack.length){toast('Nothing to redo');return;}
+  const current=snapshotState();
+  const snap=redoStack.pop();
+  undoStack.push(current);
+  if(undoStack.length>UNDO_LIMIT)undoStack.shift();
+  restoreSnapshot(snap);
+  toast('Redo');
+}
 
 // Wiki-links resolve against chapters in every collection. Collections remain the
 // only grouping model; there is no separate Codex collection or migration layer.
@@ -802,9 +1179,16 @@ function init(){
   updateThemeBtn();
   buildColorPicker();
   renderSidebar();render();applyAllSettings();initDrag();initChapterDrag();
-  document.getElementById('project-name').addEventListener('input',scheduleSave);
+  initLocalBackup();
+  startBackupNudgeWatcher();
+  document.getElementById('project-name').addEventListener('input',()=>{noteTextEdit();scheduleSave();});
   const notesEdit=document.getElementById('chapter-notes-edit');
-  if(notesEdit)notesEdit.addEventListener('input',()=>{const ch=activeChapter();if(ch)ch.notes=notesEdit.value;scheduleSave();});
+  if(notesEdit){
+    wireMdEditable(notesEdit,{
+      get:()=>activeChapter()?.notes||'',
+      set:v=>{const ch=activeChapter();if(ch)ch.notes=v;}
+    },{multiline:true,onInput:()=>scheduleSave()});
+  }
   const nameEdit=document.getElementById('chapter-name-edit');
   const aliasesEdit=document.getElementById('chapter-aliases-edit');
   const tagInput=document.getElementById('chapter-tag-input');
@@ -814,10 +1198,16 @@ function init(){
   loadNotesIntoUI();
 }
 
-function loadNotesIntoUI(){
+// force=true always re-renders (chapter switch, undo/redo, import — the
+// content genuinely needs to change under the user). Without force, skips
+// re-rendering while the field is focused so incidental re-renders elsewhere
+// (e.g. adding a block) don't clobber an in-progress edit or cursor position.
+function loadNotesIntoUI(force){
   const ch = activeChapter();
   const el=document.getElementById('chapter-notes-edit');
-  if(el)el.value=ch?.notes||'';
+  if(!el)return;
+  if(!force&&document.activeElement===el)return;
+  renderMarkdownInto(el,ch?.notes||'');
 }
 
 function loadSample(){
@@ -987,10 +1377,11 @@ function moveChapter(collId,chapId,dir){
   renderSidebar();save();
 }
 function switchChapter(collId,chapId){
-  const cur=activeChapter(),notes=document.getElementById('chapter-notes-edit');if(cur&&notes)cur.notes=notes.value;
+  // ch.notes is kept live in sync on every keystroke via wireMdEditable's
+  // getSet, so there's no need to flush the outgoing chapter's field here.
   activeCollId=collId;activeChapterId=chapId;
   renderSidebar();render();
-  const ch=activeChapter(),notesField=document.getElementById('chapter-notes-edit');if(notesField)notesField.value=ch?(ch.notes||''):'';
+  loadNotesIntoUI(true);
   updateChapTitle();save();
   if(isMobile())closeMobileSidebar();
 }
@@ -1016,8 +1407,8 @@ function parseInlineMd(text,revealLinkAt=null){
       const pipeIdx=raw.indexOf('|');
       const target=(pipeIdx>=0?raw.slice(0,pipeIdx):raw).trim();
       const display=pipeIdx>=0?raw.slice(pipeIdx+1):raw;
-      const openMark=mdMark('[[',true);if(reveal)openMark.classList.add('md-link-mark-revealed');frag.appendChild(openMark);
-      if(pipeIdx>=0){const targetMark=mdMark(target+'|',true);if(reveal)targetMark.classList.add('md-link-mark-revealed');frag.appendChild(targetMark);}
+      const openMark=mdMark('[[',true);if(reveal)openMark.classList.add('md-mark-revealed');frag.appendChild(openMark);
+      if(pipeIdx>=0){const targetMark=mdMark(target+'|',true);if(reveal)targetMark.classList.add('md-mark-revealed');frag.appendChild(targetMark);}
       const resolved=!!resolveLinkTarget(target);
       const a=document.createElement('span');
       a.className='md-link'+(resolved?'':' unresolved');
@@ -1025,16 +1416,24 @@ function parseInlineMd(text,revealLinkAt=null){
       a.title=resolved?'Cmd/Ctrl-click to open':'Cmd/Ctrl-click to create "'+target+'"';
       a.textContent=display;
       frag.appendChild(a);
-      const closeMark=mdMark(']]',true);if(reveal)closeMark.classList.add('md-link-mark-revealed');frag.appendChild(closeMark);
+      const closeMark=mdMark(']]',true);if(reveal)closeMark.classList.add('md-mark-revealed');frag.appendChild(closeMark);
     } else if(m[2]!==undefined){
+      const matchStart=m.index,matchEnd=m.index+m[0].length;
+      const reveal=typeof revealLinkAt==='number' && revealLinkAt>=matchStart && revealLinkAt<=matchEnd;
       const wrap=document.createElement('span');wrap.className='md-bold';
       const b=document.createElement('b');b.textContent=m[2];
-      wrap.append(mdMark('**'),b,mdMark('**'));
+      const openMark=mdMark('**',true);if(reveal)openMark.classList.add('md-mark-revealed');
+      const closeMark=mdMark('**',true);if(reveal)closeMark.classList.add('md-mark-revealed');
+      wrap.append(openMark,b,closeMark);
       frag.appendChild(wrap);
     } else if(m[3]!==undefined){
+      const matchStart=m.index,matchEnd=m.index+m[0].length;
+      const reveal=typeof revealLinkAt==='number' && revealLinkAt>=matchStart && revealLinkAt<=matchEnd;
       const wrap=document.createElement('span');wrap.className='md-italic';
       const it=document.createElement('i');it.textContent=m[3];
-      wrap.append(mdMark('*'),it,mdMark('*'));
+      const openMark=mdMark('*',true);if(reveal)openMark.classList.add('md-mark-revealed');
+      const closeMark=mdMark('*',true);if(reveal)closeMark.classList.add('md-mark-revealed');
+      wrap.append(openMark,it,closeMark);
       frag.appendChild(wrap);
     }
     last=re.lastIndex;
@@ -1042,7 +1441,7 @@ function parseInlineMd(text,revealLinkAt=null){
   if(last<text.length)frag.appendChild(document.createTextNode(text.slice(last)));
   return frag;
 }
-function mdMark(str,hidden){const s=document.createElement('span');s.className='md-mark'+(hidden?' md-link-mark':'');s.textContent=str;return s;}
+function mdMark(str,hidden){const s=document.createElement('span');s.className='md-mark'+(hidden?' md-mark-hidden':'');s.textContent=str;return s;}
 function renderMarkdownInto(el,text,revealLinkAt=null){el.innerHTML='';el.appendChild(parseInlineMd(text||'',revealLinkAt));}
 
 
@@ -1101,6 +1500,10 @@ function setSelectionRange(el,start,end){
 function wrapSelection(el,getSet,marker){
   const off=getSelectionOffsets(el);
   if(!off||off.start===off.end)return;
+  // Force a boundary right before the scripted DOM mutation runs, so Ctrl+Z
+  // immediately after bolding/italicizing undoes just that, never merges
+  // into whatever typing came before it.
+  pushUndoSnapshot();
   const {start,end}=off;
   const raw=el.textContent;
   const mLen=marker.length;
@@ -1128,6 +1531,7 @@ function wrapSelection(el,getSet,marker){
 function wireMdEditable(el,getSet,opts){
   opts=opts||{};
   el.addEventListener('input',()=>{
+    noteTextEdit();
     const raw=el.textContent;
     const offset=getCaretOffset(el);
     getSet.set(raw);
@@ -1160,6 +1564,21 @@ function wireMdEditable(el,getSet,opts){
       if(e.key==='Escape'){hideWikilinkAC();return;}
       if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();moveWikilinkAcSel(e.key==='ArrowDown'?1:-1);return;}
       if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();commitWikilinkAcSel(el,getSet);return;}
+    }
+    // Multiline fields (chapter notes) insert a literal newline character
+    // rather than letting contenteditable create its own <div>/<br> nodes —
+    // keeping el.textContent a clean, round-trippable plain-text source.
+    if(opts.multiline&&e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){
+      e.preventDefault();
+      noteTextEdit();
+      const raw=el.textContent;
+      const offset=getCaretOffset(el)??raw.length;
+      const newRaw=raw.slice(0,offset)+'\n'+raw.slice(offset);
+      getSet.set(newRaw);
+      renderMarkdownInto(el,newRaw,offset+1);
+      setCaretOffset(el,offset+1);
+      if(opts.onInput)opts.onInput();
+      return;
     }
     if((e.ctrlKey||e.metaKey)&&!e.altKey){
       if(e.key==='b'||e.key==='B'){e.preventDefault();wrapSelection(el,getSet,'**');return;}
@@ -1344,7 +1763,7 @@ function buildImageBlock(b,inner){
     cap.className='img-caption';cap.contentEditable='true';
     cap.setAttribute('data-placeholder','Add a caption...');
     cap.textContent=b.caption||'';
-    cap.addEventListener('input',()=>{b.caption=cap.textContent;scheduleSave();});
+    cap.addEventListener('input',()=>{noteTextEdit();b.caption=cap.textContent;scheduleSave();});
     cap.addEventListener('blur',()=>{b.caption=cap.textContent;save();});
     inner.appendChild(cap);
     const swapBtn=document.createElement('button');
@@ -1399,7 +1818,7 @@ function buildCustomBlock(b,inner,i){
   labelEl.value=b.label;
   labelEl.title='Edit label';
   labelEl.style.color=b.color;
-  labelEl.addEventListener('input',()=>{b.label=labelEl.value;scheduleSave();});
+  labelEl.addEventListener('input',()=>{noteTextEdit();b.label=labelEl.value;scheduleSave();});
   labelEl.addEventListener('blur',()=>save());
 
   labelWrap.appendChild(swatch);labelWrap.appendChild(labelEl);
@@ -1463,7 +1882,7 @@ function buildGroupBlock(b,inner,i,bs){
   nameEl.style.cssText=`font-size:${fontSizes[lvl]}px;font-weight:${600-lvl*100};letter-spacing:${0.07-lvl*0.01}em;opacity:${0.65-lvl*0.05};`;
   nameEl.value=b.name||'Group';
   nameEl.placeholder='Group name';
-  nameEl.addEventListener('input',()=>{b.name=nameEl.value;scheduleSave();});
+  nameEl.addEventListener('input',()=>{noteTextEdit();b.name=nameEl.value;scheduleSave();});
   nameEl.addEventListener('blur',()=>save());
   nameEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nameEl.blur();}});
 
@@ -1552,6 +1971,7 @@ function updateStats(){
 // ── Block operations ──
 function addBlock(type,afterIndex){
   const ch=activeChapter();if(!ch)return;
+  pushUndoSnapshot();
   const defaults={prose:{text:''},dialogue:{text:''},action:{text:''},thought:{text:''},scene:{text:''},image:{src:'',caption:''},custom:{text:'',label:'Custom',color:'#999999'},group:{name:'Group',collapsed:false}};
   const nb={type,id:nextBlockId++,...(defaults[type]||{text:''})};
   if(afterIndex!==undefined)ch.blocks.splice(afterIndex,0,nb);
@@ -1574,6 +1994,7 @@ function deleteBlock(id){
   if(ch.blocks.length<=1){toast('Need at least one block');return;}
   const btn=document.querySelector(`.block-wrap[data-id="${id}"] .gutter-btn[title="Delete block"]`);
   confirm('Delete this block?','Delete',()=>{
+    pushUndoSnapshot();
     ch.blocks=ch.blocks.filter(b=>b.id!==id);
     render();save();
   },btn);
@@ -1613,6 +2034,7 @@ function endDrag(){
     if(ch){
       const from=ch.blocks.findIndex(b=>b.id===dragId);
       if(from!==-1){
+        pushUndoSnapshot();
         const[moved]=ch.blocks.splice(from,1);
         const to=dragOverIndex>from?dragOverIndex-1:dragOverIndex;
         ch.blocks.splice(to,0,moved);render();save();
@@ -1763,6 +2185,7 @@ function renderChapterMeta(){
     const input=document.createElement('input');
     input.type='text';input.className='chapter-meta-input chapter-custom-type-input';input.placeholder='e.g. Faction, Creature, Event…';input.value=ch.customType||'';
     input.addEventListener('input',()=>{
+      noteTextEdit();
       ch.customType=input.value.trim();
       scheduleSave();
       const summary=document.getElementById('chapter-meta-summary');
@@ -1775,7 +2198,7 @@ function renderChapterMeta(){
   }
   renderChapterTagChips();
   tagInput.value='';
-  const notes=document.getElementById('chapter-notes-edit');if(notes)notes.value=ch.notes||'';
+  loadNotesIntoUI();
   updateChapterMetaSummary();
 }
 function saveChapterName(){
@@ -1970,6 +2393,7 @@ async function doExport(format){
 
   if(format==='txt'){
     download(filename+'.txt',blocksToTxt(chapters,null),'text/plain');
+    markBackupExported();
     toast('Exported '+label+' as .txt');
     return;
   }
@@ -1984,6 +2408,7 @@ async function doExport(format){
       const ch=activeChapter();
       download(filename+'.json',JSON.stringify({name:label,chapter:ch},null,2),'application/json');
     }
+    markBackupExported();
     toast('Exported '+label+' as .json');
     return;
   }
@@ -2013,6 +2438,7 @@ async function doExport(format){
       const a=document.createElement('a');
       a.href=URL.createObjectURL(blob);
       a.download=filename+'.zip';a.click();
+      markBackupExported();
       toast('Exported '+label+' as .zip');
     }catch(err){toast('Export failed: '+err.message);console.error(err);}
   }
@@ -2083,7 +2509,7 @@ function handleImport(e){
         toast('Unrecognised format');return;
       }
       renderSidebar();render();
-      document.getElementById('chapter-notes-edit').value=activeChapter()?.notes||'';
+      loadNotesIntoUI(true);
       save();
     }catch(err){toast('Could not parse file');console.error(err);}
   };
@@ -2179,6 +2605,24 @@ document.getElementById('confirm-yes-btn').addEventListener('click',()=>{
   if(confirmCallback)confirmCallback();
   closeConfirm();
 });
+// Global undo/redo/save — captured ahead of any element's own keydown handler
+// (including contenteditable blocks) so it always wins over native
+// per-field undo, which is unreliable for scripted DOM edits like bold/italic.
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&!e.altKey){
+    const k=e.key.toLowerCase();
+    if(k==='z'){
+      e.preventDefault();e.stopPropagation();
+      if(e.shiftKey)performRedo();else performUndo();
+    }else if(k==='y'){
+      e.preventDefault();e.stopPropagation();
+      performRedo();
+    }else if(k==='s'){
+      e.preventDefault();e.stopPropagation();
+      manualSave();
+    }
+  }
+},true);
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(wikilinkAcOpen()){hideWikilinkAC();return;}
