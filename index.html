@@ -213,7 +213,6 @@
   .chapter-item:hover{background:var(--bg2);}
   .chapter-item.active{background:var(--bg2);border-left-color:var(--prose-accent);}
   .chapter-item.active .chap-name{color:var(--text);font-weight:500;}
-  .chap-icon{font-size:12px;color:var(--text3);flex-shrink:0;}
   .chap-name{font-size:13px;color:var(--text2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:none;background:transparent;outline:none;cursor:pointer;padding:0;font-family:var(--sans);}
   .chap-name:focus{color:var(--text);cursor:text;}
   .chap-actions{display:none;gap:2px;}
@@ -265,15 +264,6 @@
   #content-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
   #writing-area{flex:1;overflow-y:auto;padding:2rem 0;background:var(--bg3);}
   #editor{max-width:680px;margin:0 auto;padding:0 1rem;}
-  #notes-panel{flex-shrink:0;background:var(--bg);border-top:0.5px solid var(--border);display:none;flex-direction:column;height:220px;}
-  #notes-panel.open{display:flex;}
-  #notes-header{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:0.5px solid var(--border);flex-shrink:0;}
-  #notes-header span{font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:var(--text3);}
-  #notes-close{background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;}
-  #notes-close:hover{color:var(--text);}
-  #notes-body{flex:1;overflow-y: visible;padding:12px 14px;}
-  #notes-ta{width:100%;height:100%;border:none;background:transparent;outline:none;font-family:var(--sans);font-size:13px;line-height:1.65;color:var(--text);resize:none;}
-  #notes-ta::placeholder{color:var(--text3);}
 
   /* ── Blocks ── */
   .block-wrap{position:relative;padding-left:54px;transition:opacity 0.15s;}
@@ -352,6 +342,68 @@
   #editor.focus-mode .block-wrap{transition:opacity 0.25s;}
   #editor.focus-mode .block-wrap:not(.block-focused){opacity:0.22;}
 
+  /* ── Inline markdown (live-preview style) ── */
+  .md-mark{opacity:0.32;font-style:normal!important;font-weight:400!important;}
+  /* Link syntax is hidden until the caret touches that link, Obsidian-style. */
+  .md-mark.md-link-mark{font-size:0;opacity:0;}
+  .md-link-mark-revealed{font-size:inherit!important;opacity:.45!important;}
+  .md-bold b{font-weight:700;}
+  .md-italic i{font-style:italic;}
+  .md-link{color:var(--prose-accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb, var(--prose-accent) 40%, transparent);cursor:text;}
+  .md-link:hover{border-bottom-style:solid;cursor:pointer;}
+  .md-link.unresolved{color:var(--text3);border-bottom:1px dashed var(--border2);}
+  .md-link.unresolved:hover{color:var(--text2);}
+
+  /* ── Wiki-link autocomplete ── */
+  #wikilink-ac{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.14);padding:4px;z-index:500;display:none;flex-direction:column;gap:1px;min-width:200px;max-width:280px;max-height:220px;overflow-y:auto;}
+  #wikilink-ac.open{display:flex;}
+  .wac-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius-sm);font-size:13px;color:var(--text2);cursor:pointer;}
+  .wac-item.sel,.wac-item:hover{background:var(--bg2);color:var(--text);}
+  .wac-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .wac-new{color:var(--text3);font-style:italic;}
+
+  /* ── Chapter tag dot ── */
+  .chap-tag-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,0.08);}
+
+  /* ── Chapter metadata ── */
+  #chapter-meta{margin-bottom:1.1rem;padding:10px 12px 12px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);display:flex;flex-direction:column;gap:10px;}
+  #chapter-meta.collapsed{gap:0;}
+  #chapter-meta.collapsed .chapter-meta-body{display:none;}
+  .chapter-meta-toggle{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;color:var(--text2);cursor:pointer;text-align:left;padding:0;}
+  .chapter-meta-toggle i{font-size:14px;color:var(--text3);transition:transform .15s;}
+  #chapter-meta:not(.collapsed) .chapter-meta-toggle i{transform:rotate(90deg);}
+  .chapter-meta-toggle-title{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;}
+  .chapter-meta-summary{margin-left:auto;font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chapter-meta-body{display:flex;flex-direction:column;gap:10px;}
+  .chapter-notes-row{align-items:flex-start;}
+  #chapter-notes-edit{width:100%;min-height:90px;resize:vertical;border:0.5px solid var(--border2);border-radius:var(--radius-sm);padding:8px 10px;background:var(--bg2);color:var(--text);font:13px/1.6 var(--sans);outline:none;}
+  #chapter-notes-edit:focus{border-color:var(--prose-accent);}
+  #chapter-notes-edit::placeholder{color:var(--text3);}
+  .chapter-custom-type-input{min-width:130px;max-width:180px;}
+  .chapter-meta-title-row{display:flex;align-items:baseline;gap:10px;min-width:0;}
+  .chapter-name-edit{flex:1;min-width:0;border:0;background:transparent;outline:none;color:var(--text);font:500 24px/1.25 var(--serif);padding:0;}
+  .chapter-name-edit::placeholder{color:var(--text3);}
+  .chapter-collection-label{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:35%;}
+  .chapter-meta-row{display:flex;align-items:flex-start;gap:12px;min-width:0;}
+  .chapter-meta-label{flex:0 0 56px;padding-top:6px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);}
+  .chapter-type-group{display:flex;gap:4px;flex-wrap:wrap;}
+  .chapter-type-btn{font-size:12px;padding:5px 9px;border:.5px solid var(--border2);border-radius:999px;background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px;}
+  .chapter-type-btn:hover{background:var(--bg2);color:var(--text);}
+  .chapter-type-btn.active{background:var(--bg3);color:var(--text);font-weight:500;}
+  .chapter-type-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .chapter-meta-input-row{align-items:center;}
+  .chapter-meta-input{flex:1;min-width:0;border:0;background:transparent;outline:none;color:var(--text2);font:12px var(--sans);padding:5px 0;border-bottom:.5px solid transparent;}
+  .chapter-meta-input:focus{color:var(--text);border-bottom-color:var(--border2);}
+  .chapter-meta-input::placeholder{color:var(--text3);}
+  .chapter-tags-editor{flex:1;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-height:28px;}
+  .chapter-tag-chips{display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
+  .chapter-tag-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border-radius:999px;background:var(--bg2);border:.5px solid var(--border);color:var(--text2);font-size:11px;}
+  .chapter-tag-chip button{border:0;background:none;color:var(--text3);cursor:pointer;font-size:12px;line-height:1;padding:0;}
+  .chapter-tag-chip button:hover{color:var(--text);}
+  .chapter-tag-input{width:130px;min-width:80px;flex:1;border:0;background:transparent;outline:none;color:var(--text);font:12px var(--sans);padding:5px 0;}
+  .chapter-tag-input::placeholder{color:var(--text3);}
+  @media(max-width:600px){.chapter-name-edit{font-size:21px;}.chapter-collection-label{max-width:30%;}.chapter-meta-row{gap:8px;}.chapter-meta-label{flex-basis:48px;}}
+
   /* Add bar */
   #add-bar{display:flex;gap:6px;margin-top:1rem;flex-wrap:wrap;align-items:center;}
   #add-bar span{font-size:12px;color:var(--text3);}
@@ -394,6 +446,7 @@
   .seg-btn{flex:1;font-size:12px;padding:5px 0;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:transparent;color:var(--text2);cursor:pointer;transition:background 0.15s,color 0.15s;text-align:center;}
   .seg-btn:hover{background:var(--bg2);color:var(--text);}
   .seg-btn.active{background:var(--bg3);color:var(--text);font-weight:500;}
+
 
   /* Toast */
   /* Confirm popup */
@@ -470,7 +523,6 @@
         <div class="stat-row"><span class="stat-label">Read time</span><span class="stat-val" id="rt">0 min</span></div>
         <div class="stat-total" id="total-wc"></div>
       </div>
-      <button class="side-btn" onclick="toggleNotes()"><i class="ti ti-notes"></i><span class="side-label hide-collapsed">Chapter notes</span></button>
       <button class="side-btn" id="export-menu-btn" onclick="toggleExportMenu(event)"><i class="ti ti-package-export"></i><span class="side-label hide-collapsed">Export…</span></button>
       <button class="side-btn" onclick="importJson()"><i class="ti ti-upload"></i><span class="side-label hide-collapsed">Import .json</span></button>
       <input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
@@ -501,6 +553,36 @@
     <div id="content-area">
       <div id="writing-area">
         <div id="editor">
+          <div id="chapter-meta" class="collapsed">
+            <button type="button" class="chapter-meta-toggle" onclick="toggleChapterMeta()" aria-expanded="false">
+              <i class="ti ti-chevron-right"></i><span class="chapter-meta-toggle-title">Chapter details</span><span id="chapter-meta-summary" class="chapter-meta-summary"></span>
+            </button>
+            <div class="chapter-meta-body">
+              <div class="chapter-meta-title-row">
+                <input id="chapter-name-edit" class="chapter-name-edit" placeholder="Chapter name" aria-label="Chapter name">
+                <span id="chapter-collection-label" class="chapter-collection-label"></span>
+              </div>
+              <div class="chapter-meta-row">
+                <span class="chapter-meta-label">Type</span>
+                <div id="chapter-type-group" class="chapter-type-group"></div>
+              </div>
+              <div class="chapter-meta-row chapter-meta-input-row">
+                <label class="chapter-meta-label" for="chapter-aliases-edit">Aliases</label>
+                <input id="chapter-aliases-edit" class="chapter-meta-input" placeholder="e.g. Mara, M. Vale — names wiki-links can also use">
+              </div>
+              <div class="chapter-meta-row chapter-meta-tags-row">
+                <span class="chapter-meta-label">Tags</span>
+                <div id="chapter-tags-editor" class="chapter-tags-editor">
+                  <div id="chapter-tag-chips" class="chapter-tag-chips"></div>
+                  <input id="chapter-tag-input" class="chapter-tag-input" placeholder="Add custom tag…" aria-label="Add custom tag">
+                </div>
+              </div>
+              <div class="chapter-meta-row chapter-notes-row">
+                <label class="chapter-meta-label" for="chapter-notes-edit">Notes</label>
+                <textarea id="chapter-notes-edit" placeholder="Notes, reminders, character details for this chapter…" aria-label="Chapter notes"></textarea>
+              </div>
+            </div>
+          </div>
           <div id="add-bar">
             <span>Add:</span>
             <button class="add-btn" onclick="addBlock('prose')"><span class="add-dot" style="background:var(--prose-accent)"></span>prose</button>
@@ -512,15 +594,6 @@
             <button class="add-btn" onclick="addBlock('custom')"><span class="add-dot" style="background:#999"></span>custom</button>
             <button class="add-btn" onclick="addBlock('group')"><span class="add-dot" style="background:var(--border2)"></span>group</button>
           </div>
-        </div>
-      </div>
-      <div id="notes-panel">
-        <div id="notes-header">
-          <span>Chapter notes</span>
-          <button id="notes-close" onclick="toggleNotes()" title="Close notes"><i class="ti ti-x"></i></button>
-        </div>
-        <div id="notes-body">
-          <textarea id="notes-ta" placeholder="Notes, reminders, character details for this chapter..."></textarea>
         </div>
       </div>
     </div>
@@ -632,6 +705,8 @@
   </svg>
 </div>
 
+<div id="wikilink-ac"></div>
+
 <div id="confirm-popup">
   <div id="confirm-msg">Are you sure?</div>
   <div id="confirm-btns">
@@ -650,10 +725,18 @@ const WIDTH_MAP    = {narrow:'540px',medium:'680px',wide:'860px'};
 const LH_MAP       = {tight:'1.5',normal:'1.75',airy:'2.1'};
 const COLL_ICONS   = ['ti-books','ti-users','ti-map','ti-bulb','ti-clipboard','ti-planet','ti-sword','ti-flask'];
 const CUSTOM_COLORS= ['#E85D5D','#E8935D','#D4B84A','#6BAE5E','#5D9FE8','#8B6BE8','#D45DA0','#6B8E8E','#999999','#5A5A5A'];
+const CHAPTER_TYPES       = ['chapter','character','location','item','custom'];
+const CHAPTER_TYPE_LABELS = {chapter:'Chapter',character:'Character',location:'Location',item:'Item',custom:'Custom type'};
+const CHAPTER_TYPE_COLORS = {chapter:'#8C8C8C',character:'#5D9FE8',location:'#6BAE5E',item:'#D4B84A',custom:'#999999'};
+function chapterType(ch){return CHAPTER_TYPES.includes(ch&&ch.type)?ch.type:'chapter';}
+function chapterTypeLabel(ch){return chapterType(ch)==='custom'?(ch&&ch.customType||'Custom type'):CHAPTER_TYPE_LABELS[chapterType(ch)];}
+function chapterAliases(ch){return Array.isArray(ch&&ch.aliases)?ch.aliases:[];}
+function chapterTags(ch){return Array.isArray(ch&&ch.tags)?ch.tags:[];}
 
 // ── State ──
 let collections=[], activeChapterId=null, activeCollId=null;
 let nextCollId=0, nextChapterId=0, nextBlockId=0;
+let acItems=[], acSel=0, acAnchorEl=null, acStart=null, acQuery='';
 let viewMode='normal', showLabels=true, focusedId=null;
 let pickerTargetId=null, saveTimer=null;
 let dragId=null, dragOverIndex=null;
@@ -665,6 +748,7 @@ let pendingImageBlockId=null; // which block is waiting for file input
 function allChapters(){return collections.flatMap(c=>c.chapters);}
 function activeChapter(){return allChapters().find(ch=>ch.id===activeChapterId);}
 function activeCollection(){return collections.find(c=>c.id===activeCollId);}
+function findChapterCollection(chapId){return collections.find(c=>c.chapters.some(ch=>ch.id===chapId));}
 function blocks(){const ch=activeChapter();return ch?ch.blocks:[];}
 function save(){
   localStorage.setItem('nw-collections',JSON.stringify(collections));
@@ -674,20 +758,59 @@ function save(){
 }
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,800);}
 
+// Wiki-links resolve against chapters in every collection. Collections remain the
+// only grouping model; there is no separate Codex collection or migration layer.
+function resolveLinkTarget(name){
+  const n=(name||'').trim().toLowerCase();
+  if(!n)return null;
+  return allChapters().find(ch=>ch.name.toLowerCase()===n||(ch.aliases||[]).some(a=>a.toLowerCase()===n));
+}
+
 // ── Init ──
+function normalizeProjectData(){
+  if(!Array.isArray(collections))collections=[];
+  collections.forEach((coll,ci)=>{
+    if(!coll||typeof coll!=='object')return;
+    if(!Number.isFinite(coll.id))coll.id=ci;
+    if(typeof coll.name!=='string')coll.name='Untitled Collection';
+    if(typeof coll.icon!=='string')coll.icon=COLL_ICONS[ci%COLL_ICONS.length];
+    if(!Array.isArray(coll.chapters))coll.chapters=[];
+    coll.chapters.forEach((ch,chi)=>{
+      if(!ch||typeof ch!=='object')return;
+      if(!Number.isFinite(ch.id))ch.id=ci*10000+chi;
+      if(typeof ch.name!=='string')ch.name='Untitled';
+      if(!Array.isArray(ch.blocks))ch.blocks=[];
+      if(!Array.isArray(ch.aliases))ch.aliases=[];
+      if(!Array.isArray(ch.tags))ch.tags=[];
+      if(typeof ch.notes!=='string')ch.notes='';
+      ch.blocks.forEach((b,bi)=>{
+        if(!b||typeof b!=='object')return;
+        if(!Number.isFinite(b.id))b.id=bi;
+        if(typeof b.type!=='string')b.type='prose';
+        if(b.type!=='image'&&b.type!=='group'&&typeof b.text!=='string')b.text='';
+      });
+    });
+  });
+}
+
 function init(){
   loadSettings();
   const saved=localStorage.getItem('nw-collections');
   if(saved){
     try{
       collections=JSON.parse(saved);
-      activeChapterId=parseInt(localStorage.getItem('nw-active-ch'))||allChapters()[0]?.id;
-      activeCollId=parseInt(localStorage.getItem('nw-active-coll'))||collections[0]?.id;
-      nextCollId=Math.max(...collections.map(c=>c.id))+1;
-      nextChapterId=Math.max(...allChapters().map(ch=>ch.id),0)+1;
-      nextBlockId=Math.max(...allChapters().flatMap(ch=>ch.blocks.map(b=>b.id)),0)+1;
+      normalizeProjectData();
+      nextCollId=Math.max(...collections.map(c=>c.id),-1)+1;
+      nextChapterId=Math.max(...allChapters().map(ch=>ch.id),-1)+1;
+      nextBlockId=Math.max(...allChapters().flatMap(ch=>(ch.blocks||[]).map(b=>b.id)),-1)+1;
+      activeChapterId=parseInt(localStorage.getItem('nw-active-ch'),10);
+      activeCollId=parseInt(localStorage.getItem('nw-active-coll'),10);
+      if(!allChapters().some(ch=>ch.id===activeChapterId))activeChapterId=allChapters()[0]?.id??null;
+      if(!collections.some(c=>c.id===activeCollId))activeCollId=findChapterCollection(activeChapterId)?.id??collections[0]?.id??null;
+      if(!allChapters().length)loadSample();
     }catch(e){loadSample();}
   }else{loadSample();}
+  normalizeProjectData();
   const savedName=localStorage.getItem('nw-name');
   if(savedName)document.getElementById('project-name').value=savedName;
   const theme=localStorage.getItem('nw-theme');
@@ -696,16 +819,21 @@ function init(){
   buildColorPicker();
   renderSidebar();render();applyAllSettings();initDrag();initChapterDrag();
   document.getElementById('project-name').addEventListener('input',scheduleSave);
-  document.getElementById('notes-ta').addEventListener('input',()=>{
-    const ch=activeChapter();if(ch)ch.notes=document.getElementById('notes-ta').value;
-    scheduleSave();
-  });
+  const notesEdit=document.getElementById('chapter-notes-edit');
+  if(notesEdit)notesEdit.addEventListener('input',()=>{const ch=activeChapter();if(ch)ch.notes=notesEdit.value;scheduleSave();});
+  const nameEdit=document.getElementById('chapter-name-edit');
+  const aliasesEdit=document.getElementById('chapter-aliases-edit');
+  const tagInput=document.getElementById('chapter-tag-input');
+  if(nameEdit){nameEdit.addEventListener('blur',saveChapterName);nameEdit.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nameEdit.blur();}});}
+  if(aliasesEdit){aliasesEdit.addEventListener('blur',saveChapterAliases);aliasesEdit.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();aliasesEdit.blur();}});}
+  if(tagInput){tagInput.addEventListener('keydown',handleChapterTagKeydown);tagInput.addEventListener('blur',e=>{if(e.currentTarget.value.trim()){addChapterTag(e.currentTarget.value);e.currentTarget.value='';}});}
   loadNotesIntoUI();
 }
 
 function loadNotesIntoUI(){
   const ch = activeChapter();
-  document.getElementById('notes-ta').value = ch?.notes || '';
+  const el=document.getElementById('chapter-notes-edit');
+  if(el)el.value=ch?.notes||'';
 }
 
 function loadSample(){
@@ -774,7 +902,7 @@ function renderSidebar(){
       item.dataset.id=ch.id;
       item.innerHTML=`
         <div class="chap-drag-handle" title="Drag to reorder" data-chap-drag="${ch.id}" data-chap-drag-coll="${coll.id}"><i class="ti ti-grip-vertical"></i></div>
-        <i class="ti ti-file-text chap-icon"></i>
+        <span class="chap-tag-dot" style="background:${CHAPTER_TYPE_COLORS[chapterType(ch)]}" title="${chapterTypeLabel(ch)}"></span>
         <div class="chap-name" title="Right-click to rename">${escHtml(ch.name)}</div>
         <div class="chap-actions">
           <button class="chap-btn" title="Move up" onclick="moveChapter(${coll.id},${ch.id},-1)"><i class="ti ti-chevron-up"></i></button>
@@ -787,7 +915,7 @@ function renderSidebar(){
       });
       item.querySelector('.chap-name').addEventListener('contextmenu',e=>{
         e.stopPropagation();e.preventDefault();
-        startRenameEl(item.querySelector('.chap-name'),val=>{ch.name=val||ch.name;renderSidebar();updateChapTitle();save();});
+        startRenameEl(item.querySelector('.chap-name'),val=>{ch.name=val||ch.name;renderSidebar();updateChapTitle();render();save();});
       });
       chapList.appendChild(item);
     });
@@ -828,8 +956,8 @@ function addCollection(){
   },50);
 }
 function deleteCollection(id,anchorEl){
-  if(collections.length===1){toast("Can't delete the only collection");return;}
   const coll=collections.find(c=>c.id===id);
+  if(collections.length===1){toast("Can't delete the only collection");return;}
   confirm('Delete "'+(coll?.name||'collection')+'" and all its chapters?','Delete',()=>{
     collections=collections.filter(c=>c.id!==id);
     if(!allChapters().find(ch=>ch.id===activeChapterId)){
@@ -851,7 +979,7 @@ function addChapter(collId){
   coll.chapters.push(ch);coll.open=true;switchChapter(collId,ch.id);save();
   setTimeout(()=>{
     const item=document.querySelector(`.chapter-item[data-id="${ch.id}"]`);
-    if(item){const el=item.querySelector('.chap-name');if(el)startRenameEl(el,val=>{ch.name=val||ch.name;renderSidebar();updateChapTitle();save();});}
+    if(item){const el=item.querySelector('.chap-name');if(el)startRenameEl(el,val=>{ch.name=val||ch.name;renderSidebar();updateChapTitle();render();save();});}
   },60);
 }
 function deleteChapter(collId,chapId,anchorEl){
@@ -875,10 +1003,10 @@ function moveChapter(collId,chapId,dir){
   renderSidebar();save();
 }
 function switchChapter(collId,chapId){
-  const cur=activeChapter();if(cur)cur.notes=document.getElementById('notes-ta').value;
+  const cur=activeChapter(),notes=document.getElementById('chapter-notes-edit');if(cur&&notes)cur.notes=notes.value;
   activeCollId=collId;activeChapterId=chapId;
   renderSidebar();render();
-  const ch=activeChapter();document.getElementById('notes-ta').value=ch?(ch.notes||''):'';
+  const ch=activeChapter(),notesField=document.getElementById('chapter-notes-edit');if(notesField)notesField.value=ch?(ch.notes||''):'';
   updateChapTitle();save();
   if(isMobile())closeMobileSidebar();
 }
@@ -888,10 +1016,262 @@ function updateChapTitle(){
 }
 
 // ── Render blocks ──
+// ── Inline markdown: **bold**, *italic*, [[Link]], [[Link|Alias]] ──
+// Marker characters stay as real (dimmed) text nodes in the DOM, so
+// el.textContent always reconstructs the exact raw source string.
+function parseInlineMd(text,revealLinkAt=null){
+  const frag=document.createDocumentFragment();
+  const re=/\[\[([^\[\]]+?)\]\]|\*\*([^*\n]+?)\*\*|\*([^*\n]+?)\*/g;
+  let last=0,m;
+  while((m=re.exec(text))){
+    if(m.index>last)frag.appendChild(document.createTextNode(text.slice(last,m.index)));
+    if(m[1]!==undefined){
+      const raw=m[1];
+      const linkStart=m.index,linkEnd=m.index+ m[0].length;
+      const reveal=typeof revealLinkAt==='number' && revealLinkAt>=linkStart && revealLinkAt<=linkEnd;
+      const pipeIdx=raw.indexOf('|');
+      const target=(pipeIdx>=0?raw.slice(0,pipeIdx):raw).trim();
+      const display=pipeIdx>=0?raw.slice(pipeIdx+1):raw;
+      const openMark=mdMark('[[',true);if(reveal)openMark.classList.add('md-link-mark-revealed');frag.appendChild(openMark);
+      if(pipeIdx>=0){const targetMark=mdMark(target+'|',true);if(reveal)targetMark.classList.add('md-link-mark-revealed');frag.appendChild(targetMark);}
+      const resolved=!!resolveLinkTarget(target);
+      const a=document.createElement('span');
+      a.className='md-link'+(resolved?'':' unresolved');
+      a.dataset.target=target;
+      a.title=resolved?'Cmd/Ctrl-click to open':'Cmd/Ctrl-click to create "'+target+'"';
+      a.textContent=display;
+      frag.appendChild(a);
+      const closeMark=mdMark(']]',true);if(reveal)closeMark.classList.add('md-link-mark-revealed');frag.appendChild(closeMark);
+    } else if(m[2]!==undefined){
+      const wrap=document.createElement('span');wrap.className='md-bold';
+      const b=document.createElement('b');b.textContent=m[2];
+      wrap.append(mdMark('**'),b,mdMark('**'));
+      frag.appendChild(wrap);
+    } else if(m[3]!==undefined){
+      const wrap=document.createElement('span');wrap.className='md-italic';
+      const it=document.createElement('i');it.textContent=m[3];
+      wrap.append(mdMark('*'),it,mdMark('*'));
+      frag.appendChild(wrap);
+    }
+    last=re.lastIndex;
+  }
+  if(last<text.length)frag.appendChild(document.createTextNode(text.slice(last)));
+  return frag;
+}
+function mdMark(str,hidden){const s=document.createElement('span');s.className='md-mark'+(hidden?' md-link-mark':'');s.textContent=str;return s;}
+function renderMarkdownInto(el,text,revealLinkAt=null){el.innerHTML='';el.appendChild(parseInlineMd(text||'',revealLinkAt));}
+
+
+// ── Caret offset (character index within textContent) survives re-render ──
+function getCaretOffset(el){
+  const sel=window.getSelection();
+  if(!sel.rangeCount)return null;
+  const range=sel.getRangeAt(0);
+  if(!el.contains(range.startContainer))return null;
+  const pre=document.createRange();
+  pre.selectNodeContents(el);
+  pre.setEnd(range.startContainer,range.startOffset);
+  return pre.toString().length;
+}
+// Finds the {node,offset} text position `offset` characters into el's textContent.
+function locateOffset(el,offset){
+  const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null);
+  let node,count=0;
+  while((node=walker.nextNode())){
+    const len=node.textContent.length;
+    if(count+len>=offset)return{node,offset:Math.max(0,Math.min(len,offset-count))};
+    count+=len;
+  }
+  return null;
+}
+function setCaretOffset(el,offset){
+  if(offset==null)return;
+  const pos=locateOffset(el,offset);
+  const range=document.createRange();
+  if(pos)range.setStart(pos.node,pos.offset);
+  else range.selectNodeContents(el);
+  range.collapse(true);
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+}
+// Selection start/end as character offsets into el.textContent (mirrors getCaretOffset).
+function getSelectionOffsets(el){
+  const sel=window.getSelection();
+  if(!sel.rangeCount)return null;
+  const range=sel.getRangeAt(0);
+  if(!el.contains(range.startContainer)||!el.contains(range.endContainer))return null;
+  const preStart=document.createRange();preStart.selectNodeContents(el);preStart.setEnd(range.startContainer,range.startOffset);
+  const preEnd=document.createRange();preEnd.selectNodeContents(el);preEnd.setEnd(range.endContainer,range.endOffset);
+  return{start:preStart.toString().length,end:preEnd.toString().length};
+}
+function setSelectionRange(el,start,end){
+  const startPos=locateOffset(el,start)||{node:el,offset:el.childNodes.length};
+  const endPos=locateOffset(el,end)||{node:el,offset:el.childNodes.length};
+  const range=document.createRange();
+  range.setStart(startPos.node,startPos.offset);
+  range.setEnd(endPos.node,endPos.offset);
+  const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+}
+// Ctrl/Cmd+B and Ctrl/Cmd+I: wrap (or unwrap) the current selection in ** or *
+// markdown markers. Requires an actual selection — a collapsed caret does nothing,
+// since there's no clean way to know what the person intends to bold/italicize yet.
+function wrapSelection(el,getSet,marker){
+  const off=getSelectionOffsets(el);
+  if(!off||off.start===off.end)return;
+  const {start,end}=off;
+  const raw=el.textContent;
+  const mLen=marker.length;
+  const before=raw.slice(0,start),selText=raw.slice(start,end),after=raw.slice(end);
+  let newRaw,newStart,newEnd;
+  if(selText.length>=2*mLen&&selText.startsWith(marker)&&selText.endsWith(marker)){
+    // Selection includes the markers itself — unwrap.
+    const inner=selText.slice(mLen,selText.length-mLen);
+    newRaw=before+inner+after;newStart=start;newEnd=start+inner.length;
+  }else if(before.endsWith(marker)&&after.startsWith(marker)){
+    // Markers sit just outside the selection — unwrap.
+    newRaw=before.slice(0,before.length-mLen)+selText+after.slice(mLen);
+    newStart=start-mLen;newEnd=end-mLen;
+  }else{
+    newRaw=before+marker+selText+marker+after;
+    newStart=start+mLen;newEnd=end+mLen;
+  }
+  getSet.set(newRaw);
+  renderMarkdownInto(el,newRaw);
+  setSelectionRange(el,newStart,newEnd);
+}
+
+// ── Wire a contenteditable for live markdown + wiki-link autocomplete ──
+// getSet = {get:()=>string, set:(v)=>void} lets this work for any chapter-backed editor.
+function wireMdEditable(el,getSet,opts){
+  opts=opts||{};
+  el.addEventListener('input',()=>{
+    const raw=el.textContent;
+    const offset=getCaretOffset(el);
+    getSet.set(raw);
+    renderMarkdownInto(el,raw,offset);
+    setCaretOffset(el,offset);
+    handleWikilinkAutocomplete(el,raw,offset);
+    if(opts.onInput)opts.onInput();
+  });
+  el.addEventListener('focus',()=>{if(opts.onFocus)opts.onFocus();});
+  const revealAtCaret=()=>{
+    const sel=window.getSelection();
+    if(!sel||sel.rangeCount===0||!el.contains(sel.anchorNode)||!el.contains(sel.focusNode))return;
+    // Never re-render while a range is selected: doing so replaces the DOM
+    // nodes that own the native selection and makes highlighting disappear.
+    if(!sel.isCollapsed)return;
+    const off=getCaretOffset(el);
+    if(off!=null){const raw=el.textContent;renderMarkdownInto(el,raw,off);setCaretOffset(el,off);}
+  };
+  el.addEventListener('keyup',revealAtCaret);
+  // Mouse clicks need the same Obsidian-style reveal, but wait until mouseup
+  // so drag-selection has finished before considering a caret reveal.
+  el.addEventListener('mouseup',()=>setTimeout(revealAtCaret,0));
+  el.addEventListener('blur',()=>{getSet.set(el.textContent);hideWikilinkAC();if(opts.onBlur)opts.onBlur();});
+  el.addEventListener('click',e=>{
+    const link=e.target.closest('.md-link');
+    if(link&&(e.metaKey||e.ctrlKey)){e.preventDefault();openOrCreateChapterEntry(link.dataset.target);}
+  });
+  el.addEventListener('keydown',e=>{
+    if(wikilinkAcOpen()){
+      if(e.key==='Escape'){hideWikilinkAC();return;}
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();moveWikilinkAcSel(e.key==='ArrowDown'?1:-1);return;}
+      if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();commitWikilinkAcSel(el,getSet);return;}
+    }
+    if((e.ctrlKey||e.metaKey)&&!e.altKey){
+      if(e.key==='b'||e.key==='B'){e.preventDefault();wrapSelection(el,getSet,'**');return;}
+      if(e.key==='i'||e.key==='I'){e.preventDefault();wrapSelection(el,getSet,'*');return;}
+    }
+    if(opts.onKeydown)opts.onKeydown(e);
+  });
+  el.__mdGetSet=getSet;
+}
+
+// ── Wiki-link autocomplete popup ──
+function handleWikilinkAutocomplete(el,raw,caretOffset){
+  if(caretOffset==null){hideWikilinkAC();return;}
+  const before=raw.slice(0,caretOffset);
+  const m=/\[\[([^\[\]]*)$/.exec(before);
+  if(!m){hideWikilinkAC();return;}
+  acQuery=m[1];acStart=m.index;acAnchorEl=el;
+  const q=acQuery.toLowerCase();
+  acItems=allChapters().filter(c=>c.name.toLowerCase().includes(q)||chapterAliases(c).some(a=>a.toLowerCase().includes(q))||chapterTags(c).some(t=>t.toLowerCase().includes(q))).slice(0,8);
+  acSel=0;
+  showWikilinkAC();
+}
+function wikilinkAcOpen(){return document.getElementById('wikilink-ac').classList.contains('open');}
+function hideWikilinkAC(){document.getElementById('wikilink-ac').classList.remove('open');acStart=null;}
+function showWikilinkAC(){
+  const pop=document.getElementById('wikilink-ac');
+  pop.innerHTML='';
+  acItems.forEach((c,idx)=>{
+    const row=document.createElement('div');
+    row.className='wac-item'+(idx===acSel?' sel':'');
+    const dot=document.createElement('span');dot.className='wac-dot';dot.style.background=CHAPTER_TYPE_COLORS[chapterType(c)]||'#999';
+    const nm=document.createElement('span');nm.textContent=c.name;
+    row.append(dot,nm);
+    row.onmousedown=e=>{e.preventDefault();acSel=idx;commitWikilinkAcSel(acAnchorEl,acAnchorEl.__mdGetSet);};
+    pop.appendChild(row);
+  });
+  if(acQuery){
+    const create=document.createElement('div');
+    create.className='wac-item wac-new'+(acSel===acItems.length?' sel':'');
+    create.textContent='+ New entry "'+acQuery+'"';
+    create.onmousedown=e=>{e.preventDefault();acSel=acItems.length;commitWikilinkAcSel(acAnchorEl,acAnchorEl.__mdGetSet);};
+    pop.appendChild(create);
+  }
+  if(!acItems.length&&!acQuery){hideWikilinkAC();return;}
+  const sel=window.getSelection();
+  if(sel.rangeCount){
+    const r=sel.getRangeAt(0).cloneRange();
+    const rects=r.getClientRects();
+    const rect=rects[0]||acAnchorEl.getBoundingClientRect();
+    pop.style.left=Math.max(4,Math.min(rect.left,window.innerWidth-290))+'px';
+    pop.style.top=(rect.bottom+4)+'px';
+  }
+  pop.classList.add('open');
+}
+function moveWikilinkAcSel(dir){
+  const total=acItems.length+(acQuery?1:0);
+  if(!total)return;
+  acSel=(acSel+dir+total)%total;
+  showWikilinkAC();
+}
+function commitWikilinkAcSel(el,getSet){
+  if(!el||!getSet)return;
+  let name;
+  if(acSel<acItems.length)name=acItems[acSel].name;
+  else{const coll=activeCollection()||collections[0];if(!coll)return;const entry={id:nextChapterId++,name:acQuery||'Untitled',type:'chapter',aliases:[],tags:[],blocks:[],notes:''};coll.chapters.push(entry);coll.open=true;renderSidebar();scheduleSave();name=entry.name;}
+  const raw=el.textContent;
+  const caret=getCaretOffset(el);
+  const before=raw.slice(0,acStart);
+  const after=raw.slice(caret==null?raw.length:caret);
+  const newRaw=before+'[['+name+']]'+after;
+  getSet.set(newRaw);
+  renderMarkdownInto(el,newRaw);
+  setCaretOffset(el,before.length+2+name.length+2);
+  hideWikilinkAC();
+  el.focus();
+}
+function openOrCreateChapterEntry(name){
+  let entry=resolveLinkTarget(name);
+  if(!entry){
+    const coll=activeCollection()||collections[0];
+    if(!coll)return;
+    entry={id:nextChapterId++,name:name||'Untitled',type:'chapter',aliases:[],tags:[],blocks:[],notes:''};
+    coll.chapters.push(entry);coll.open=true;
+    renderSidebar();scheduleSave();
+  }
+  const coll=findChapterCollection(entry.id);
+  if(coll)switchChapter(coll.id,entry.id);
+}
+
 function render(){
   const editor=document.getElementById('editor');
   const addBar=document.getElementById('add-bar');
+  const chapterMeta=document.getElementById('chapter-meta');
   editor.innerHTML='';
+  if(chapterMeta)editor.appendChild(chapterMeta);
+  renderChapterMeta();
   const bs=blocks();
   bs.forEach((b,i)=>{
     const dz=document.createElement('div');
@@ -949,11 +1329,13 @@ function buildBlockWrap(b,i,bs){
     const p=document.createElement('div');
     p.contentEditable='true';
     p.setAttribute('data-placeholder',PLACEHOLDERS[b.type]||'Write here...');
-    p.spellcheck=true;p.textContent=b.text||'';
-    p.addEventListener('input',()=>{b.text=p.textContent;scheduleSave();updateStats();});
-    p.addEventListener('focus',()=>{focusedId=b.id;if(viewMode==='focus')refreshFocusClasses();});
-    p.addEventListener('blur',()=>{b.text=p.textContent;save();});
-    p.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addBlock(b.type,i+1);}});
+    p.spellcheck=true;
+    renderMarkdownInto(p,b.text||'');
+    wireMdEditable(p,{get:()=>b.text,set:v=>{b.text=v;scheduleSave();updateStats();}},{
+      onFocus:()=>{focusedId=b.id;if(viewMode==='focus')refreshFocusClasses();},
+      onBlur:()=>save(),
+      onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addBlock(b.type,i+1);}}
+    });
     inner.appendChild(label);inner.appendChild(p);
   }
 
@@ -1042,12 +1424,14 @@ function buildCustomBlock(b,inner,i){
   const p=document.createElement('div');
   p.contentEditable='true';
   p.setAttribute('data-placeholder','Write here...');
-  p.spellcheck=true;p.textContent=b.text||'';
+  p.spellcheck=true;
   p.style.fontSize='16px';p.style.lineHeight='1.7';
-  p.addEventListener('input',()=>{b.text=p.textContent;scheduleSave();updateStats();});
-  p.addEventListener('focus',()=>{focusedId=b.id;if(viewMode==='focus')refreshFocusClasses();});
-  p.addEventListener('blur',()=>{b.text=p.textContent;save();});
-  p.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addBlock(b.type,i+1);}});
+  renderMarkdownInto(p,b.text||'');
+  wireMdEditable(p,{get:()=>b.text,set:v=>{b.text=v;scheduleSave();updateStats();}},{
+    onFocus:()=>{focusedId=b.id;if(viewMode==='focus')refreshFocusClasses();},
+    onBlur:()=>save(),
+    onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addBlock(b.type,i+1);}}
+  });
   inner.appendChild(p);
 }
 
@@ -1351,7 +1735,119 @@ function setView(v){
 }
 
 // ── Notes ──
-function toggleNotes(){document.getElementById('notes-panel').classList.toggle('open');}
+function toggleChapterMeta(){
+  const meta=document.getElementById('chapter-meta');if(!meta)return;
+  const collapsed=meta.classList.toggle('collapsed');
+  const btn=meta.querySelector('.chapter-meta-toggle');
+  if(btn)btn.setAttribute('aria-expanded',String(!collapsed));
+}
+
+// ── Chapter metadata ──
+function updateChapterMetaSummary(){
+  const ch=activeChapter(),summary=document.getElementById('chapter-meta-summary');
+  if(!summary)return;
+  if(!ch){summary.textContent='';return;}
+  const bits=[chapterTypeLabel(ch),chapterAliases(ch).length?chapterAliases(ch).length+' aliases':'',chapterTags(ch).length?chapterTags(ch).length+' tags':''].filter(Boolean);
+  summary.textContent=bits.join(' · ');
+}
+function renderChapterMeta(){
+  const ch=activeChapter();
+  const name=document.getElementById('chapter-name-edit');
+  const collLabel=document.getElementById('chapter-collection-label');
+  const typeGroup=document.getElementById('chapter-type-group');
+  const aliases=document.getElementById('chapter-aliases-edit');
+  const chips=document.getElementById('chapter-tag-chips');
+  const tagInput=document.getElementById('chapter-tag-input');
+  if(!name||!typeGroup||!aliases||!chips||!tagInput)return;
+  if(!ch){
+    name.value='';aliases.value='';chips.innerHTML='';typeGroup.innerHTML='';
+    if(collLabel)collLabel.textContent='';
+    return;
+  }
+  name.value=ch.name||'';
+  if(collLabel){const coll=activeCollection();collLabel.textContent=coll?coll.name:'';}
+  aliases.value=chapterAliases(ch).join(', ');
+  typeGroup.innerHTML='';
+  ['chapter','character','location','item','custom'].forEach(t=>{
+    const btn=document.createElement('button');
+    btn.type='button';btn.className='chapter-type-btn'+(chapterType(ch)===t?' active':'');
+    btn.innerHTML=`<span class="chapter-type-dot" style="background:${CHAPTER_TYPE_COLORS[t]}"></span>${CHAPTER_TYPE_LABELS[t]}`;
+    btn.onclick=()=>setChapterType(t);
+    typeGroup.appendChild(btn);
+  });
+  if(chapterType(ch)==='custom'){
+    const input=document.createElement('input');
+    input.type='text';input.className='chapter-meta-input chapter-custom-type-input';input.placeholder='e.g. Faction, Creature, Event…';input.value=ch.customType||'';
+    input.addEventListener('input',()=>{
+      ch.customType=input.value.trim();
+      scheduleSave();
+      const summary=document.getElementById('chapter-meta-summary');
+      if(summary){const bits=[chapterTypeLabel(ch),chapterAliases(ch).length?chapterAliases(ch).length+' aliases':'',chapterTags(ch).length?chapterTags(ch).length+' tags':''].filter(Boolean);summary.textContent=bits.join(' · ');}
+      const dot=document.querySelector(`.chapter-item[data-id="${ch.id}"] .chap-tag-dot`);
+      if(dot)dot.title=chapterTypeLabel(ch);
+    });
+    input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();input.blur();}});
+    typeGroup.appendChild(input);
+  }
+  renderChapterTagChips();
+  tagInput.value='';
+  const notes=document.getElementById('chapter-notes-edit');if(notes)notes.value=ch.notes||'';
+  updateChapterMetaSummary();
+}
+function saveChapterName(){
+  const ch=activeChapter(),el=document.getElementById('chapter-name-edit');
+  if(!ch||!el)return;
+  const name=el.value.trim();
+  if(name)ch.name=name;
+  el.value=ch.name||'';
+  renderSidebar();updateChapTitle();scheduleSave();
+}
+function setChapterType(type){
+  const ch=activeChapter();
+  if(!ch||!CHAPTER_TYPES.includes(type))return;
+  ch.type=type;
+  if(type!=='custom')delete ch.customType;
+  renderChapterMeta();renderSidebar();scheduleSave();
+}
+function saveChapterAliases(){
+  const ch=activeChapter(),el=document.getElementById('chapter-aliases-edit');
+  if(!ch||!el)return;
+  ch.aliases=el.value.split(',').map(s=>s.trim()).filter(Boolean);
+  updateChapterMetaSummary();
+  scheduleSave();
+}
+function renderChapterTagChips(){
+  const ch=activeChapter(),wrap=document.getElementById('chapter-tag-chips');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  chapterTags(ch).forEach(tag=>{
+    const chip=document.createElement('span');chip.className='chapter-tag-chip';
+    const text=document.createElement('span');text.textContent=tag;
+    const x=document.createElement('button');x.type='button';x.title='Remove tag';x.textContent='×';
+    x.onclick=()=>removeChapterTag(tag);
+    chip.append(text,x);wrap.appendChild(chip);
+  });
+}
+function addChapterTag(raw){
+  const ch=activeChapter();
+  if(!ch)return;
+  const tag=(raw||'').trim().replace(/,+$/,'').trim();
+  if(!tag)return;
+  if(!Array.isArray(ch.tags))ch.tags=[];
+  if(!ch.tags.some(t=>t.toLowerCase()===tag.toLowerCase()))ch.tags.push(tag);
+  renderChapterTagChips();updateChapterMetaSummary();scheduleSave();
+}
+function removeChapterTag(tag){
+  const ch=activeChapter();if(!ch)return;
+  ch.tags=chapterTags(ch).filter(t=>t!==tag);
+  renderChapterTagChips();updateChapterMetaSummary();scheduleSave();
+}
+function handleChapterTagKeydown(e){
+  if(e.key==='Enter'||e.key===','){e.preventDefault();addChapterTag(e.currentTarget.value);e.currentTarget.value='';return;}
+  if(e.key==='Backspace'&&!e.currentTarget.value&&chapterTags(activeChapter()).length){
+    const tags=chapterTags(activeChapter());removeChapterTag(tags[tags.length-1]);
+  }
+}
 
 // ── Theme ──
 function toggleTheme(){
@@ -1466,7 +1962,7 @@ function getScopeData(){
     const label=coll?coll.name:'collection';
     return{chapters:coll?coll.chapters:[],label,filename:projName+'_'+label.replace(/[^a-z0-9_\-\s]/gi,'_')};
   }
-  return{chapters:allChapters(),label:projName,filename:projName};
+  return{chapters:allChapters().filter(ch=>chapterType(ch)==='chapter'),label:projName,filename:projName};
 }
 
 function blocksToTxt(chapters,imgMap){
@@ -1561,11 +2057,11 @@ function handleImport(e){
         // Full project — replace everything
         collections=data.collections;
         if(data.name)document.getElementById('project-name').value=data.name;
+                nextCollId=Math.max(...collections.map(c=>c.id))+1;
+        nextChapterId=Math.max(...allChapters().map(ch=>ch.id),0)+1;
+        nextBlockId=Math.max(...allChapters().flatMap(ch=>(ch.blocks||[]).map(b=>b.id)),0)+1;
         activeCollId=collections[0]?.id;
         activeChapterId=allChapters()[0]?.id;
-        nextCollId=Math.max(...collections.map(c=>c.id))+1;
-        nextChapterId=Math.max(...allChapters().map(ch=>ch.id),0)+1;
-        nextBlockId=Math.max(...allChapters().flatMap(ch=>ch.blocks.map(b=>b.id)),0)+1;
         toast('Project imported');
       } else if(data.collection){
         // Single collection export — append as new collection
@@ -1603,7 +2099,7 @@ function handleImport(e){
         toast('Unrecognised format');return;
       }
       renderSidebar();render();
-      document.getElementById('notes-ta').value=activeChapter()?.notes||'';
+      document.getElementById('chapter-notes-edit').value=activeChapter()?.notes||'';
       save();
     }catch(err){toast('Could not parse file');console.error(err);}
   };
@@ -1700,7 +2196,10 @@ document.getElementById('confirm-yes-btn').addEventListener('click',()=>{
   closeConfirm();
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')closeConfirm();
+  if(e.key==='Escape'){
+    if(wikilinkAcOpen()){hideWikilinkAC();return;}
+    closeConfirm();
+  }
 });
 
 // ── Toast ──
@@ -1716,6 +2215,8 @@ document.addEventListener('click',e=>{
   if(sp.classList.contains('open')&&!sp.contains(e.target)&&!sb.contains(e.target)){sp.classList.remove('open');sb.classList.remove('active');}
   const cp=document.getElementById('color-picker-popup');
   if(!cp.contains(e.target)&&!e.target.closest('.custom-color-swatch'))cp.classList.remove('open');
+  const wac=document.getElementById('wikilink-ac');
+  if(!wac.contains(e.target)&&e.target!==acAnchorEl)hideWikilinkAC();
 });
 
 
