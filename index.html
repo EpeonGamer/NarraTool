@@ -11,10 +11,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
   // ── Offline icon fallback ──
-  // The Tabler icon font is loaded from a CDN. If it can't be reached (offline,
-  // blocked, CDN down), fall back to plain-text/emoji glyphs so buttons never
-  // render as empty boxes. Detection runs via the font-loading API with a
-  // timeout, backed up by the stylesheet's own onerror handler.
   var __iconFontOk = false;
   function applyIconFallback(){
     document.documentElement.classList.add('icons-fallback');
@@ -33,13 +29,10 @@
   function pollForIconFont(){
     if(__iconPollActive) return; // don't stack multiple polling loops
     if(!(window.document && document.fonts)){
-      // No Font Loading API to verify with — assume the stylesheet's own
-      // onerror handler will catch real failures, don't guess further.
+      // No Font Loading API to verify with — assume the stylesheet will handle errors
       return;
     }
     __iconPollActive = true;
-    // Poll instead of a single check: the @font-face rule and the actual font
-    // file can both still be mid-download for a bit after the page loads, so
     // a one-shot check right away is unreliable and can false-positive.
     var attempts = 0, maxAttempts = 25; // ~5s of polling at 200ms
     var poll = setInterval(function(){
@@ -54,8 +47,7 @@
         clearInterval(poll);
         __iconPollActive = false;
         if(!__iconFontOk) applyIconFallback();
-        // Keep checking in the background in case a slow connection catches
-        // up later — self-heal rather than stay stuck on emoji fallback.
+        // self-heal rather than stay stuck on emoji fallback.
         var recover = setInterval(function(){
           if(checkIconFontNow()){ clearIconFallback(); clearInterval(recover); }
         },1500);
@@ -78,17 +70,12 @@
   })();
   window.addEventListener('offline', applyIconFallback);
   // ── Recovery on reconnect ──
-  // 'offline' puts us into emoji mode, but a failed <link> request doesn't
-  // auto-retry just because connectivity comes back (e.g. after the laptop
-  // wakes from sleep) — and nothing was previously listening for 'online'
-  // at all, so the fallback could get stuck on even once back online.
   window.addEventListener('online', function(){
     if(__iconFontOk) return; // already fine, nothing to recover
     retryIconStylesheet();
     pollForIconFont();
   });
-  // Some OSes/browsers don't reliably fire offline/online events around
-  // sleep/wake. Re-verify whenever the tab becomes visible again too.
+  // Some OSes/browsers don't reliably fire offline/online events
   document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'visible' && !__iconFontOk && navigator.onLine !== false){
       retryIconStylesheet();
@@ -116,10 +103,7 @@
   }
   html,body{height:100%;background:var(--bg3);color:var(--text);font-family:var(--sans);}
 
-  /* ── Offline icon fallback ──
-     When the Tabler icon font can't be reached, .icons-fallback is added to
-     <html> and every icon glyph below is swapped for a plain-text/emoji
-     equivalent drawn from system fonts (always available offline). */
+  /* ── Offline icon fallback ── */
   html.icons-fallback .ti,
   html.icons-fallback [class*="ti-"]{
     font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",var(--sans)!important;
