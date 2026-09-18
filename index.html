@@ -342,7 +342,7 @@
 
   /* ── Inline markdown (live-preview style) ── */
   .md-mark{opacity:0.32;font-style:normal!important;font-weight:400!important;}
-  /* **/*/[[ ]] syntax is hidden until the caret touches it, Obsidian-style. */
+  /* Bold, italic, and wikilink markers ("**", "*", "[[ ]]") are hidden until the caret touches them, Obsidian-style. */
   .md-mark.md-mark-hidden{font-size:0;opacity:0;}
   .md-mark.md-mark-hidden.md-mark-revealed{font-size:inherit!important;opacity:.45!important;}
   .md-bold b{font-weight:700;}
@@ -1445,43 +1445,62 @@ function updateChapTitle(){
 // ── Inline markdown: **bold**, *italic*, [[Link]], [[Link|Alias]] ──
 // Marker characters stay as real (dimmed) text nodes in the DOM, so
 // el.textContent always reconstructs the exact raw source string.
+//
+// Wikilinks are extracted from the *whole* string first, and bold/italic are
+// only matched within the plain-text segments before/after/between them.
+// (Running one combined regex over the whole string let a stray, unpaired
+// "*" anywhere before a [[Link]] pair up with another "*" anywhere after it
+// and swallow the link's brackets as literal italic text, silently breaking
+// the link's hide/reveal marks — see the segments approach below instead.)
 function parseInlineMd(text,revealLinkAt=null){
   const frag=document.createDocumentFragment();
-  const re=/\[\[([^\[\]]+?)\]\]|\*\*([^*\n]+?)\*\*|\*([^*\n]+?)\*/g;
+  const linkRe=/\[\[([^\[\]]+?)\]\]/g;
+  let last=0,m;
+  while((m=linkRe.exec(text))){
+    if(m.index>last)appendInlineEmphasis(frag,text.slice(last,m.index),last,revealLinkAt);
+    const raw=m[1];
+    const linkStart=m.index,linkEnd=m.index+ m[0].length;
+    const reveal=typeof revealLinkAt==='number' && revealLinkAt>=linkStart && revealLinkAt<=linkEnd;
+    const pipeIdx=raw.indexOf('|');
+    const target=(pipeIdx>=0?raw.slice(0,pipeIdx):raw).trim();
+    const display=pipeIdx>=0?raw.slice(pipeIdx+1):raw;
+    const openMark=mdMark('[[',true);if(reveal)openMark.classList.add('md-mark-revealed');frag.appendChild(openMark);
+    if(pipeIdx>=0){const targetMark=mdMark(target+'|',true);if(reveal)targetMark.classList.add('md-mark-revealed');frag.appendChild(targetMark);}
+    const resolved=!!resolveLinkTarget(target);
+    const a=document.createElement('span');
+    a.className='md-link'+(resolved?'':' unresolved');
+    a.dataset.target=target;
+    a.title=resolved?'Cmd/Ctrl-click to open':'Cmd/Ctrl-click to create "'+target+'"';
+    a.textContent=display;
+    frag.appendChild(a);
+    const closeMark=mdMark(']]',true);if(reveal)closeMark.classList.add('md-mark-revealed');frag.appendChild(closeMark);
+    last=linkRe.lastIndex;
+  }
+  if(last<text.length)appendInlineEmphasis(frag,text.slice(last),last,revealLinkAt);
+  return frag;
+}
+// Matches **bold**/*italic* within a plain-text segment (no [[ ]] involved —
+// those are already stripped out by parseInlineMd before this runs) and
+// appends the resulting nodes to frag. baseOffset is that segment's start
+// position within the original full string, so reveal-at-caret math still
+// lines up against the caret offset computed over the whole field.
+function appendInlineEmphasis(frag,text,baseOffset,revealLinkAt){
+  const re=/\*\*([^*\n]+?)\*\*|\*([^*\n]+?)\*/g;
   let last=0,m;
   while((m=re.exec(text))){
     if(m.index>last)frag.appendChild(document.createTextNode(text.slice(last,m.index)));
+    const matchStart=baseOffset+m.index,matchEnd=baseOffset+m.index+m[0].length;
+    const reveal=typeof revealLinkAt==='number' && revealLinkAt>=matchStart && revealLinkAt<=matchEnd;
     if(m[1]!==undefined){
-      const raw=m[1];
-      const linkStart=m.index,linkEnd=m.index+ m[0].length;
-      const reveal=typeof revealLinkAt==='number' && revealLinkAt>=linkStart && revealLinkAt<=linkEnd;
-      const pipeIdx=raw.indexOf('|');
-      const target=(pipeIdx>=0?raw.slice(0,pipeIdx):raw).trim();
-      const display=pipeIdx>=0?raw.slice(pipeIdx+1):raw;
-      const openMark=mdMark('[[',true);if(reveal)openMark.classList.add('md-mark-revealed');frag.appendChild(openMark);
-      if(pipeIdx>=0){const targetMark=mdMark(target+'|',true);if(reveal)targetMark.classList.add('md-mark-revealed');frag.appendChild(targetMark);}
-      const resolved=!!resolveLinkTarget(target);
-      const a=document.createElement('span');
-      a.className='md-link'+(resolved?'':' unresolved');
-      a.dataset.target=target;
-      a.title=resolved?'Cmd/Ctrl-click to open':'Cmd/Ctrl-click to create "'+target+'"';
-      a.textContent=display;
-      frag.appendChild(a);
-      const closeMark=mdMark(']]',true);if(reveal)closeMark.classList.add('md-mark-revealed');frag.appendChild(closeMark);
-    } else if(m[2]!==undefined){
-      const matchStart=m.index,matchEnd=m.index+m[0].length;
-      const reveal=typeof revealLinkAt==='number' && revealLinkAt>=matchStart && revealLinkAt<=matchEnd;
       const wrap=document.createElement('span');wrap.className='md-bold';
-      const b=document.createElement('b');b.textContent=m[2];
+      const b=document.createElement('b');b.textContent=m[1];
       const openMark=mdMark('**',true);if(reveal)openMark.classList.add('md-mark-revealed');
       const closeMark=mdMark('**',true);if(reveal)closeMark.classList.add('md-mark-revealed');
       wrap.append(openMark,b,closeMark);
       frag.appendChild(wrap);
-    } else if(m[3]!==undefined){
-      const matchStart=m.index,matchEnd=m.index+m[0].length;
-      const reveal=typeof revealLinkAt==='number' && revealLinkAt>=matchStart && revealLinkAt<=matchEnd;
+    } else if(m[2]!==undefined){
       const wrap=document.createElement('span');wrap.className='md-italic';
-      const it=document.createElement('i');it.textContent=m[3];
+      const it=document.createElement('i');it.textContent=m[2];
       const openMark=mdMark('*',true);if(reveal)openMark.classList.add('md-mark-revealed');
       const closeMark=mdMark('*',true);if(reveal)closeMark.classList.add('md-mark-revealed');
       wrap.append(openMark,it,closeMark);
@@ -1490,7 +1509,6 @@ function parseInlineMd(text,revealLinkAt=null){
     last=re.lastIndex;
   }
   if(last<text.length)frag.appendChild(document.createTextNode(text.slice(last)));
-  return frag;
 }
 function mdMark(str,hidden){const s=document.createElement('span');s.className='md-mark'+(hidden?' md-mark-hidden':'');s.textContent=str;return s;}
 function renderMarkdownInto(el,text,revealLinkAt=null){el.innerHTML='';el.appendChild(parseInlineMd(text||'',revealLinkAt));}
@@ -1605,7 +1623,16 @@ function wireMdEditable(el,getSet,opts){
   // Mouse clicks need the same Obsidian-style reveal, but wait until mouseup
   // so drag-selection has finished before considering a caret reveal.
   el.addEventListener('mouseup',()=>setTimeout(revealAtCaret,0));
-  el.addEventListener('blur',()=>{getSet.set(el.textContent);hideWikilinkAC();if(opts.onBlur)opts.onBlur();});
+  el.addEventListener('blur',()=>{
+    const raw=el.textContent;
+    getSet.set(raw);
+    // Caret is leaving the field entirely, so nothing should stay "revealed" —
+    // re-render with no reveal position to re-hide any marks the caret was
+    // last sitting next to (keyup/mouseup only reveal, they never hide again).
+    renderMarkdownInto(el,raw);
+    hideWikilinkAC();
+    if(opts.onBlur)opts.onBlur();
+  });
   el.addEventListener('click',e=>{
     const link=e.target.closest('.md-link');
     if(link&&(e.metaKey||e.ctrlKey)){e.preventDefault();openOrCreateChapterEntry(link.dataset.target);}
