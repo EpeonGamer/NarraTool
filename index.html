@@ -143,6 +143,7 @@
   html.icons-fallback .ti-alert-triangle:before{content:"⚠"!important;}
   html.icons-fallback .ti-circle-check-filled:before{content:"✓"!important;}
   html.icons-fallback .ti-cloud-off:before{content:"☁"!important;}
+  html.icons-fallback .ti-copy:before{content:"⧉"!important;}
   #eye-widget{--eye-white:#fff;--eye-rim:#c0c0c0;--eye-pupil:#1a1a18;--eye-glint:#fff;}
   .nw-eye{display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.18));transition:transform 0.08s;}
   #shell{display:flex;height:100vh;}
@@ -1254,6 +1255,7 @@ function renderSidebar(){
         <button class="coll-btn" title="Move up" onclick="moveCollection(${coll.id},-1)"><i class="ti ti-chevron-up"></i></button>
         <button class="coll-btn" title="Move down" onclick="moveCollection(${coll.id},1)"><i class="ti ti-chevron-down"></i></button>
         <button class="coll-btn" title="Add chapter" onclick="addChapter(${coll.id})"><i class="ti ti-plus"></i></button>
+        <button class="coll-btn" title="Duplicate collection" onclick="duplicateCollection(${coll.id},this)"><i class="ti ti-copy"></i></button>
         <button class="coll-btn danger" title="Delete collection" onclick="deleteCollection(${coll.id},this)"><i class="ti ti-trash"></i></button>
       </div>`;
     header.querySelector('.coll-chevron').addEventListener('click',e=>{e.stopPropagation();toggleCollection(coll.id);});
@@ -1281,6 +1283,7 @@ function renderSidebar(){
         <div class="chap-actions">
           <button class="chap-btn" title="Move up" onclick="moveChapter(${coll.id},${ch.id},-1)"><i class="ti ti-chevron-up"></i></button>
           <button class="chap-btn" title="Move down" onclick="moveChapter(${coll.id},${ch.id},1)"><i class="ti ti-chevron-down"></i></button>
+          <button class="chap-btn" title="Duplicate" onclick="duplicateChapter(${coll.id},${ch.id})"><i class="ti ti-copy"></i></button>
           <button class="chap-btn danger" title="Delete" onclick="deleteChapter(${coll.id},${ch.id},this)"><i class="ti ti-trash"></i></button>
         </div>`;
       item.addEventListener('click',e=>{
@@ -1341,6 +1344,40 @@ function deleteCollection(id,anchorEl){
     renderSidebar();render();save();
   },anchorEl);
 }
+// Copy naming: strip any existing " copy" / " copy N" suffix first so
+// duplicating a duplicate doesn't stack suffixes, then find the lowest-numbered
+// unused "<root> copy"/"<root> copy N" name against the given lowercase name set.
+function nextCopyName(base,existingNamesLower){
+  const m=/^(.*) copy(?: (\d+))?$/i.exec(base);
+  const root=(m?m[1]:base).trim()||base;
+  const first=root+' copy';
+  if(!existingNamesLower.has(first.toLowerCase()))return first;
+  let n=2;
+  while(existingNamesLower.has((root+' copy '+n).toLowerCase()))n++;
+  return root+' copy '+n;
+}
+function duplicateCollection(id,anchorEl){
+  const coll=collections.find(c=>c.id===id);if(!coll)return;
+  confirm('Duplicate "'+coll.name+'" and all its chapters?','Duplicate',()=>{
+    const clone=JSON.parse(JSON.stringify(coll));
+    clone.id=nextCollId++;
+    const existingCollNames=new Set(collections.map(c=>c.name.toLowerCase()));
+    clone.name=nextCopyName(coll.name,existingCollNames);
+    const existingChapNames=new Set(allChapters().map(c=>c.name.toLowerCase()));
+    clone.chapters=(clone.chapters||[]).map(ch=>{
+      const newCh={...ch,id:nextChapterId++,blocks:(ch.blocks||[]).map(b=>({...b,id:nextBlockId++}))};
+      newCh.name=nextCopyName(ch.name,existingChapNames);
+      newCh.aliases=[]; // don't let the copy inherit wikilink aliases from the original
+      existingChapNames.add(newCh.name.toLowerCase());
+      return newCh;
+    });
+    clone.open=true;
+    const idx=collections.findIndex(c=>c.id===id);
+    collections.splice(idx+1,0,clone);
+    renderSidebar();save();
+    toast('Duplicated "'+coll.name+'"');
+  },anchorEl);
+}
 function moveCollection(id,dir){
   const i=collections.findIndex(c=>c.id===id);const ni=i+dir;
   if(ni<0||ni>=collections.length)return;
@@ -1355,6 +1392,20 @@ function addChapter(collId){
     const item=document.querySelector(`.chapter-item[data-id="${ch.id}"]`);
     if(item){const el=item.querySelector('.chap-name');if(el)startRenameEl(el,val=>{ch.name=val||ch.name;renderSidebar();updateChapTitle();render();save();});}
   },60);
+}
+function duplicateChapter(collId,chapId){
+  const coll=collections.find(c=>c.id===collId);if(!coll)return;
+  const ch=coll.chapters.find(c=>c.id===chapId);if(!ch)return;
+  const clone=JSON.parse(JSON.stringify(ch));
+  clone.id=nextChapterId++;
+  clone.blocks=(clone.blocks||[]).map(b=>({...b,id:nextBlockId++}));
+  clone.aliases=[]; // don't let the copy inherit wikilink aliases from the original
+  const existingNames=new Set(allChapters().map(c=>c.name.toLowerCase()));
+  clone.name=nextCopyName(ch.name,existingNames);
+  const idx=coll.chapters.findIndex(c=>c.id===chapId);
+  coll.chapters.splice(idx+1,0,clone);
+  renderSidebar();save();
+  toast('Duplicated "'+ch.name+'"');
 }
 function deleteChapter(collId,chapId,anchorEl){
   const coll=collections.find(c=>c.id===collId);if(!coll)return;
