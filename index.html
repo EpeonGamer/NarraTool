@@ -225,7 +225,7 @@
   #beat-map{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;}
   .beat-dot{width:9px;height:9px;border-radius:50%;cursor:pointer;transition:transform 0.1s;}
   .beat-dot:hover{transform:scale(1.4);}
-  .stat-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;}
+  .stat-row{display:inline-flex;justify-content:start;align-items:baseline;margin-bottom:3px;gap:0.4em;}
   .stat-label{font-size:11px;color:var(--text3);}
   .stat-val{font-size:13px;font-weight:500;color:var(--text);}
   .stat-total{font-size:11px;color:var(--text3);margin-top:4px;}
@@ -568,9 +568,9 @@
       <div class="stat-section hide-collapsed">
         <span class="sec-title">This chapter</span>
         <div id="beat-map"></div>
-        <div class="stat-row"><span class="stat-label">Words</span><span class="stat-val" id="wc">0</span></div>
-        <div class="stat-row"><span class="stat-label">Blocks</span><span class="stat-val" id="bc">0</span></div>
-        <div class="stat-row"><span class="stat-label">Read time</span><span class="stat-val" id="rt">0 min</span></div>
+        <div class="stat-row"><span class="stat-label">Words:</span><span class="stat-val" id="wc">0</span></div>
+        <div class="stat-row"><span class="stat-label">Blocks:</span><span class="stat-val" id="bc">0</span></div>
+        <div class="stat-row"><span class="stat-label">Read time:</span><span class="stat-val" id="rt">0 min</span></div>
         <div class="stat-total" id="total-wc"></div>
       </div>
       <button class="side-btn" id="backup-status-btn" onclick="handleBackupClick()" title="Local backup status">
@@ -2345,7 +2345,7 @@ function updateStats(){
   const words=bs.reduce((a,b)=>a+(b.text||'').trim().split(/\s+/).filter(Boolean).length,0);
   document.getElementById('wc').textContent=words.toLocaleString();
   document.getElementById('bc').textContent=bs.length;
-  document.getElementById('rt').textContent=Math.max(1,Math.round(words/200))+'min';
+  document.getElementById('rt').textContent=Math.max(1,Math.round(words/200))+' min';
   document.getElementById('prog').style.width=Math.min(100,words/4)+'%';
   const totalWords=allChapters().reduce((a,ch)=>a+ch.blocks.reduce((x,b)=>x+(b.text||'').trim().split(/\s+/).filter(Boolean).length,0),0);
   const totalChaps=allChapters().length;
