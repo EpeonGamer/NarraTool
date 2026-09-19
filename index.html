@@ -216,8 +216,10 @@
       <div class="stats-progress"><div id="stats-session-progress"></div></div>
     </div>
     <div class="stats-section">
-      <div class="stats-section-title">Daily writing streak</div>
-      <div class="stats-streak"><strong id="stats-streak-count">0</strong><span id="stats-streak-label">days</span><span id="stats-streak-detail"></span></div>
+      <div class="stats-section-title">Writing streak</div>
+      <div class="stats-streak"><strong id="stats-streak-count">0</strong><span id="stats-streak-label">writing days</span><span id="stats-streak-detail"></span></div>
+      <div class="stats-goal-row streak-gap-row"><label for="streak-gap-input">Allowed gap</label><input id="streak-gap-input" type="number" min="0" max="30" step="1" value="0"><span>missed days</span><button class="seg-btn active" onclick="saveStreakGap()">Save</button></div>
+      <div class="stats-help">A gap of 0 means consecutive calendar days. A gap of 1 allows one missed day between writing days.</div>
     </div>
     <div class="stats-section stats-mini-grid">
       <div><span>All manuscript</span><strong id="stats-all-words">0</strong></div>
@@ -302,6 +304,15 @@
   <button class="bn-close" onclick="dismissBackupNudge(false)" title="Dismiss"><i class="ti ti-x"></i></button>
 </div>
 <script src="js/search.js"></script>
-<script src="script.js"></script>
+<script src="js/core.js"></script>
+<script src="js/plot.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/blocks.js"></script>
+<script src="js/settings-export.js"></script>
+<script src="js/dialogs.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
