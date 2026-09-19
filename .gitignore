@@ -1,0 +1,13 @@
+.godot/
+.nomedia
+.import/
+export.cfg
+export_credentials.cfg
+*.translation
+.mono/
+data_*/
+mono_crash.*.json
+repomix-output.*
+*.py
+codebase_map.json
+CODEBASE_MAP.md
