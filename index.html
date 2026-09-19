@@ -126,7 +126,7 @@
     <div id="plot-view-toggle" class="plot-view-toggle">
       <button id="plot-view-tree" class="plot-view-toggle-btn" title="Outline view" onclick="setPlotView('tree')"><i class="ti ti-list-tree"></i></button>
       <button id="plot-view-board" class="plot-view-toggle-btn" title="Corkboard view" onclick="setPlotView('board')"><i class="ti ti-layout-grid"></i></button>
-      <button id="plot-view-timeline" class="plot-view-toggle-btn" title="Timeline view (storylines as lanes)" onclick="setPlotView('timeline')"><i class="ti ti-timeline"></i></button>
+      <button id="plot-view-timeline" class="plot-view-toggle-btn" title="Timeline view (ideas as lanes)" onclick="setPlotView('timeline')"><i class="ti ti-timeline"></i></button>
     </div>
     <input id="plot-search" class="plot-search" placeholder="Search ideas…" oninput="renderPlotWorkspace()">
     <select id="plot-sort" class="plot-filter-input" title="Sort the current view" onchange="renderPlotWorkspace()">
@@ -250,6 +250,7 @@
 </div>
 
 <div id="wikilink-ac"></div>
+<div id="tag-ac"></div>
 
 <div id="confirm-popup">
   <div id="confirm-msg">Are you sure?</div>

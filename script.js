@@ -590,22 +590,39 @@ function plotTagDialog(id,anchor){
   closePlotDialog();
   const d=document.createElement('div');d.className='plot-tag-editor';d.id='plot-tag-editor';d.dataset.plotId=String(id);
   const chips=document.createElement('div');chips.className='plot-tag-editor-chips';
+  d.innerHTML='<div class="plot-tag-editor-title">Tags</div>';d.appendChild(chips);
+  renderPlotTagChips(id);
+  const input=document.createElement('input');input.className='plot-tag-editor-input';input.placeholder='Add tag…';input.setAttribute('aria-label','Add tag');
+  const pick=tag=>{addPlotTag(id,tag);input.value='';renderPlotTagChips(id);hideTagAC();input.focus();};
+  input.addEventListener('input',()=>updateTagAutocomplete(input,plotIdea(id)?.tags||[],pick));
+  input.onkeydown=e=>{
+    if(tagAcOpen()&&(e.key==='ArrowDown'||e.key==='ArrowUp')){e.preventDefault();moveTagAcSel(e.key==='ArrowDown'?1:-1);return;}
+    if(e.key==='Enter'||e.key===','){
+      e.preventDefault();
+      if(tagAcOpen()&&tagAcItems.length){pick(tagAcItems[tagAcSel]);return;}
+      pick(input.value);return;
+    }
+    if(e.key==='Backspace'&&!input.value&&(p.tags||[]).length){pushUndoSnapshot();p.tags.pop();renderPlotTagChips(id);scheduleSave();renderPlotWorkspace();}
+    if(e.key==='Escape'){if(tagAcOpen()){hideTagAC();return;}closePlotDialog();}
+  };
+  d.appendChild(input);const help=document.createElement('div');help.className='plot-tag-editor-help';help.textContent='Press Enter to add a tag.';d.appendChild(help);
+  document.body.appendChild(d);positionPlotPopover(d,anchor);input.focus();
+}
+// Refreshes just the chip row inside an already-open tag dialog, without
+// rebuilding the input (which would drop focus and any autocomplete state
+// mid-type — see plotTagDialog's `pick`).
+function renderPlotTagChips(id){
+  const d=document.getElementById('plot-tag-editor');if(!d)return;
+  const p=plotIdea(id);if(!p)return;
+  const chips=d.querySelector('.plot-tag-editor-chips');if(!chips)return;
+  chips.innerHTML='';
   (p.tags||[]).forEach(tag=>{
     const chip=document.createElement('span');chip.className='chapter-tag-chip';
     const text=document.createElement('span');text.textContent=tag;
     const x=document.createElement('button');x.type='button';x.title='Remove tag';x.textContent='×';
-    x.onclick=()=>{pushUndoSnapshot();p.tags=(p.tags||[]).filter(t=>t!==tag);renderPlotTagEditor(id);scheduleSave();renderPlotWorkspace();};
+    x.onclick=()=>{pushUndoSnapshot();p.tags=(p.tags||[]).filter(t=>t!==tag);renderPlotTagChips(id);scheduleSave();renderPlotWorkspace();};
     chip.append(text,x);chips.appendChild(chip);
   });
-  d.innerHTML='<div class="plot-tag-editor-title">Tags</div>';d.appendChild(chips);
-  const input=document.createElement('input');input.className='plot-tag-editor-input';input.placeholder='Add tag…';input.setAttribute('aria-label','Add tag');
-  input.onkeydown=e=>{
-    if(e.key==='Enter'||e.key===','){e.preventDefault();addPlotTag(id,input.value);input.value='';return;}
-    if(e.key==='Backspace'&&!input.value&&(p.tags||[]).length){pushUndoSnapshot();p.tags.pop();renderPlotTagEditor(id);scheduleSave();renderPlotWorkspace();}
-    if(e.key==='Escape')closePlotDialog();
-  };
-  d.appendChild(input);const help=document.createElement('div');help.className='plot-tag-editor-help';help.textContent='Press Enter to add a tag.';d.appendChild(help);
-  document.body.appendChild(d);positionPlotPopover(d,anchor);input.focus();
 }
 function renderPlotTagEditor(id){
   const d=document.getElementById('plot-tag-editor');if(!d)return;
@@ -619,6 +636,8 @@ document.addEventListener('pointerdown',e=>{
   if(d && !d.contains(e.target) && !e.target.closest('.plot-icon-btn[title="Edit tags"]')) d.remove();
   const cd=document.getElementById('plot-color-editor');
   if(cd && !cd.contains(e.target) && !e.target.closest('.plot-color-btn')) cd.remove();
+  const tac=document.getElementById('tag-ac');
+  if(tac && tac.classList.contains('open') && !tac.contains(e.target) && e.target!==tagAcInput) hideTagAC();
 });
 function addPlotTag(id,raw){
   const p=plotIdea(id);if(!p)return;const tag=(raw||'').trim().replace(/,+$/,'').trim();if(!tag)return;
@@ -627,6 +646,42 @@ function addPlotTag(id,raw){
   pushUndoSnapshot();
   p.tags.push(tag);
   scheduleSave();renderPlotWorkspace();
+}
+// ── Tag autocomplete (shared by idea tags and chapter tags) ──
+let tagAcItems=[],tagAcSel=0,tagAcInput=null,tagAcOnPick=null;
+function allKnownTags(){
+  const set=new Set();
+  plotIdeas.forEach(p=>(p.tags||[]).forEach(t=>t&&set.add(t)));
+  allChapters().forEach(ch=>chapterTags(ch).forEach(t=>t&&set.add(t)));
+  return [...set].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+}
+function tagAcOpen(){return document.getElementById('tag-ac')?.classList.contains('open')||false;}
+function hideTagAC(){document.getElementById('tag-ac')?.classList.remove('open');tagAcInput=null;tagAcOnPick=null;tagAcItems=[];}
+function updateTagAutocomplete(inputEl,excludeTags,onPick){
+  const q=inputEl.value.trim().toLowerCase();
+  const exclude=new Set((excludeTags||[]).map(t=>t.toLowerCase()));
+  const all=allKnownTags().filter(t=>!exclude.has(t.toLowerCase()));
+  tagAcItems=(q?all.filter(t=>t.toLowerCase().includes(q)):all).slice(0,8);
+  if(!tagAcItems.length){hideTagAC();return;}
+  tagAcInput=inputEl;tagAcOnPick=onPick;tagAcSel=0;
+  renderTagAC(inputEl);
+}
+function renderTagAC(anchor){
+  const pop=document.getElementById('tag-ac');if(!pop)return;
+  pop.innerHTML='';
+  tagAcItems.forEach((t,i)=>{
+    const item=document.createElement('div');item.className='wac-item tag-ac-item'+(i===tagAcSel?' sel':'');
+    item.textContent=t;
+    item.onmousedown=e=>{e.preventDefault();const pick=tagAcOnPick;hideTagAC();if(pick)pick(t);};
+    pop.appendChild(item);
+  });
+  pop.classList.add('open');
+  positionPlotPopover(pop,anchor);
+}
+function moveTagAcSel(dir){
+  if(!tagAcItems.length)return;
+  tagAcSel=(tagAcSel+dir+tagAcItems.length)%tagAcItems.length;
+  renderTagAC(tagAcInput);
 }
 function positionPlotPopover(d,anchor){
   d.__anchor=anchor||null;
@@ -644,6 +699,7 @@ function closePlotDialog(){
   document.getElementById('plot-dialog')?.remove();
   document.getElementById('plot-tag-editor')?.remove();
   document.getElementById('plot-color-editor')?.remove();
+  hideTagAC();
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderPlotEditor(p){
@@ -733,9 +789,10 @@ function plotRevealNode(id){
   const p=plotIdea(id);if(!p)return;
   activePlotId=id;
   if(plotIsFiltered()){document.getElementById('plot-search').value='';document.getElementById('plot-tag-filter').value='';document.getElementById('plot-view-filter').value='all';}
-  if(plotView==='board'){
-    // Corkboard shows one level at a time — land on the level that contains
-    // the idea (its parent), so the target shows up as a card there.
+  if(plotView==='board'||plotView==='timeline'){
+    // Corkboard and timeline both show one level at a time — land on the
+    // level that contains the idea (its parent), so the target shows up as
+    // a card or a lane there.
     plotFocusId=p.parentId??null;
   }else{
     plotAncestors(id).forEach(aid=>{if(aid!==id)plotCollapsed.delete(aid);});
@@ -746,6 +803,8 @@ function plotRevealNode(id){
     let node=null;
     if(plotView==='board'){
       node=document.querySelector('.plot-card[data-id="'+CSS.escape(id)+'"]');
+    }else if(plotView==='timeline'){
+      node=document.querySelector('.plot-lane[data-id="'+CSS.escape(id)+'"]');
     }else{
       const branch=document.querySelector('.plot-branch[data-id="'+CSS.escape(id)+'"]');
       node=branch?.querySelector(':scope>.plot-node-row>.plot-node');
@@ -801,6 +860,7 @@ function renderPlotWorkspace(){
 // Shows one level at a time (the children of plotFocusId, or the roots when
 // plotFocusId is unset) as draggable cards. "Open" drills into a card's own
 // children as the next level; the breadcrumb above walks back out.
+function plotContainerId(){return (plotFocusId&&plotIdea(plotFocusId))?plotFocusId:null;}
 function plotBoardItems(containerId){
   if(containerId==null)return plotRoots();
   const container=plotIdea(containerId);
@@ -814,43 +874,56 @@ function plotBoardReorder(id,parentId,items,targetId,before){
   plotMove(id,parentId,before?idx:idx+1);
 }
 function renderPlotBoard(canvas){
-  const containerId=(plotFocusId&&plotIdea(plotFocusId))?plotFocusId:null;
+  const containerId=plotContainerId();
   const items=plotBoardItems(containerId);
   const wrap=document.createElement('div');wrap.className='plot-board-wrap';
   const grid=document.createElement('div');grid.className='plot-board';
   items.forEach(p=>grid.appendChild(renderPlotCard(p,items,containerId)));
   const add=document.createElement('button');add.type='button';add.className='plot-card-add';add.innerHTML='<i class="ti ti-plus"></i> New card';
   add.onclick=()=>plotAdd(containerId,items.length?items[items.length-1].id:null);
-  add.addEventListener('dragover',e=>{if(plotDragId==null)return;e.preventDefault();});
-  add.addEventListener('drop',e=>{e.preventDefault();if(plotDragId==null)return;if(plotDescendant(plotDragId,containerId))return;plotMove(plotDragId,containerId,items.filter(x=>x.id!==plotDragId).length);});
+  add.addEventListener('dragover',e=>{if(plotDragMode!=='card'||plotDragId==null)return;e.preventDefault();});
+  add.addEventListener('drop',e=>{e.preventDefault();if(plotDragMode!=='card'||plotDragId==null)return;if(plotDescendant(plotDragId,containerId))return;plotMove(plotDragId,containerId,items.filter(x=>x.id!==plotDragId).length);});
   grid.appendChild(add);
   wrap.appendChild(grid);
   if(!items.length){const hint=document.createElement('div');hint.className='plot-empty';hint.style.margin='30px auto 0';hint.innerHTML='<p>No cards at this level yet.</p>';wrap.insertBefore(hint,grid);}
   canvas.appendChild(wrap);
 }
 function renderPlotCard(p,items,parentId){
-  const card=document.createElement('div');card.className='plot-card'+(activePlotId===p.id?' selected':'');card.draggable=true;card.dataset.id=p.id;
+  const card=document.createElement('div');card.className='plot-card'+(activePlotId===p.id?' selected':'');card.dataset.id=p.id;
   plotApplyColorVar(card,p);
-  card.addEventListener('dragstart',e=>{plotDragId=p.id;card.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
-  card.addEventListener('dragend',()=>{plotDragId=null;document.querySelectorAll('.plot-card').forEach(x=>x.classList.remove('dragging','drop-before','drop-after'));});
+  // Dragging is scoped to the grip handle only (see the tree-node comment
+  // above) — the whole card used to be draggable, which hijacked normal
+  // text-selection drags inside the editor.
   card.addEventListener('dragover',e=>{
-    if(plotDragId==null||plotDragId===p.id)return;e.preventDefault();
-    const r=card.getBoundingClientRect(),before=(e.clientX-r.left)<r.width/2;
-    card.classList.toggle('drop-before',before);card.classList.toggle('drop-after',!before);
+    if(plotDragMode!=='card'||plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
+    e.preventDefault();
+    const r=card.getBoundingClientRect(),frac=(e.clientX-r.left)/r.width;
+    card.classList.remove('drop-before','drop-after','drop-child');
+    if(frac<0.25)card.classList.add('drop-before');
+    else if(frac>0.75)card.classList.add('drop-after');
+    else card.classList.add('drop-child');
   });
-  card.addEventListener('dragleave',()=>card.classList.remove('drop-before','drop-after'));
+  card.addEventListener('dragleave',()=>card.classList.remove('drop-before','drop-after','drop-child'));
   card.addEventListener('drop',e=>{
-    e.preventDefault();const before=card.classList.contains('drop-before');card.classList.remove('drop-before','drop-after');
-    if(plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
-    plotBoardReorder(plotDragId,parentId,items,p.id,before);
+    e.preventDefault();
+    const mode=card.classList.contains('drop-before')?'before':card.classList.contains('drop-after')?'after':'child';
+    card.classList.remove('drop-before','drop-after','drop-child');
+    if(plotDragMode!=='card'||plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
+    if(mode==='child'){plotMove(plotDragId,p.id,plotIdea(p.id).children.length);return;}
+    plotBoardReorder(plotDragId,parentId,items,p.id,mode==='before');
   });
   const head=document.createElement('div');head.className='plot-card-head';
+  const grip=document.createElement('button');grip.type='button';grip.className='plot-card-grip';grip.title='Drag to move';grip.setAttribute('aria-label','Drag to move this idea');grip.innerHTML='<i class="ti ti-grip-vertical"></i>';grip.draggable=true;
+  grip.addEventListener('click',e=>e.stopPropagation());
+  grip.addEventListener('dragstart',e=>{plotDragId=p.id;plotDragMode='card';card.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.stopPropagation();});
+  grip.addEventListener('dragend',e=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-card').forEach(x=>x.classList.remove('dragging','drop-before','drop-after','drop-child'));e.stopPropagation();});
   const idBtn=document.createElement('button');idBtn.type='button';idBtn.className='plot-ref-id';idBtn.title='Copy reference [['+p.id+']]';idBtn.textContent=p.id;idBtn.onclick=async e=>{e.stopPropagation();await copyPlotIdeaRef(p.id);};
+  const left=document.createElement('div');left.className='plot-card-head-left';left.append(grip,idBtn);
   const actions=document.createElement('div');actions.className='plot-card-actions';
   const tagBtn=document.createElement('button');tagBtn.type='button';tagBtn.className='plot-icon-btn';tagBtn.title='Edit tags';tagBtn.innerHTML='<i class="ti ti-tag"></i>';tagBtn.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,tagBtn);};
   const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='plot-icon-btn';delBtn.title='Delete idea and children';delBtn.innerHTML='<i class="ti ti-trash"></i>';delBtn.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(p.id,delBtn);};
   actions.append(tagBtn,renderPlotColorBtn(p),delBtn);
-  head.append(idBtn,actions);
+  head.append(left,actions);
   const ed=document.createElement('div');ed.className='plot-card-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write an idea…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot idea');
   renderMarkdownInto(ed,p.text||'');
   wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;document.querySelectorAll('.plot-card.selected').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');}});
@@ -866,53 +939,62 @@ function renderPlotCard(p,items,parentId){
   return card;
 }
 // ── Timeline / swimlane view ──
-// Root ideas double as storyline lanes; each lane's direct children are its
-// beats, laid out left-to-right in story order. Deeper nesting under a beat
-// isn't shown here — a beat with children gets an "N nested" link into the
-// corkboard drilled into it instead, rather than trying to flatten arbitrary
-// depth into a 2D grid.
+// Like the corkboard, this shows one level at a time: the children of
+// plotFocusId (or the roots when unset) become lanes, laid out top to
+// bottom, and each lane's own children become its beats, laid out left to
+// right in story order. A beat with further children gets an "N nested"
+// link that drills into that beat as the new lane level — so, like the
+// corkboard, the timeline works at any depth, not just the root.
 function renderPlotTimeline(canvas){
-  const lanes=plotRoots();
+  const containerId=plotContainerId();
+  const lanes=plotBoardItems(containerId);
   const wrap=document.createElement('div');wrap.className='plot-timeline';
   if(!lanes.length){
-    const hint=document.createElement('div');hint.className='plot-empty';hint.innerHTML='<h3>No storylines yet</h3><p>Each top-level idea becomes a lane here; its children become beats placed along that lane.</p>';
+    const hint=document.createElement('div');hint.className='plot-empty';hint.innerHTML='<h3>No ideas yet</h3><p>Each idea at this level becomes a lane here; its children become beats placed along that lane.</p>';
     wrap.appendChild(hint);
   }
-  lanes.forEach(lane=>wrap.appendChild(renderPlotLane(lane)));
-  const addLane=document.createElement('button');addLane.type='button';addLane.className='plot-lane-add';addLane.innerHTML='<i class="ti ti-plus"></i> New storyline';
-  addLane.onclick=()=>plotAdd(null,lanes.length?lanes[lanes.length-1].id:null);
+  lanes.forEach(lane=>wrap.appendChild(renderPlotLane(lane,lanes,containerId)));
+  const addLane=document.createElement('button');addLane.type='button';addLane.className='plot-lane-add';addLane.innerHTML='<i class="ti ti-plus"></i> New idea';
+  addLane.onclick=()=>plotAdd(containerId,lanes.length?lanes[lanes.length-1].id:null);
+  addLane.addEventListener('dragover',e=>{if(plotDragMode!=='lane'||plotDragId==null)return;e.preventDefault();});
+  addLane.addEventListener('drop',e=>{e.preventDefault();if(plotDragMode!=='lane'||plotDragId==null)return;if(plotDescendant(plotDragId,containerId))return;plotMove(plotDragId,containerId,lanes.filter(x=>x.id!==plotDragId).length);});
   wrap.appendChild(addLane);
   canvas.appendChild(wrap);
 }
-function renderPlotLane(lane){
+function renderPlotLane(lane,items,parentId){
   const row=document.createElement('div');row.className='plot-lane';row.dataset.id=lane.id;
   plotApplyColorVar(row,lane);
   row.addEventListener('dragover',e=>{
-    if(plotDragMode!=='lane'||plotDragId==null||plotDragId===lane.id)return;
+    if(plotDragMode!=='lane'||plotDragId==null||plotDragId===lane.id||plotDescendant(plotDragId,lane.id))return;
     e.preventDefault();
-    const r=row.getBoundingClientRect(),before=(e.clientY-r.top)<r.height/2;
-    row.classList.toggle('drop-before',before);row.classList.toggle('drop-after',!before);
+    const r=row.getBoundingClientRect(),frac=(e.clientY-r.top)/r.height;
+    row.classList.remove('drop-before','drop-after','drop-child');
+    if(frac<0.25)row.classList.add('drop-before');
+    else if(frac>0.75)row.classList.add('drop-after');
+    else row.classList.add('drop-child');
   });
-  row.addEventListener('dragleave',e=>{if(!row.contains(e.relatedTarget))row.classList.remove('drop-before','drop-after');});
+  row.addEventListener('dragleave',e=>{if(!row.contains(e.relatedTarget))row.classList.remove('drop-before','drop-after','drop-child');});
   row.addEventListener('drop',e=>{
     if(plotDragMode!=='lane')return;e.preventDefault();
-    const before=row.classList.contains('drop-before');row.classList.remove('drop-before','drop-after');
-    if(plotDragId==null||plotDragId===lane.id)return;
-    plotBoardReorder(plotDragId,null,plotRoots(),lane.id,before);
+    const mode=row.classList.contains('drop-before')?'before':row.classList.contains('drop-after')?'after':'child';
+    row.classList.remove('drop-before','drop-after','drop-child');
+    if(plotDragId==null||plotDragId===lane.id||plotDescendant(plotDragId,lane.id))return;
+    if(mode==='child'){plotMove(plotDragId,lane.id,plotIdea(lane.id).children.length);return;}
+    plotBoardReorder(plotDragId,parentId,items,lane.id,mode==='before');
   });
   const head=document.createElement('div');head.className='plot-lane-head';
-  const grip=document.createElement('span');grip.className='plot-lane-grip';grip.title='Drag to reorder storylines';grip.innerHTML='<i class="ti ti-grip-vertical"></i>';grip.draggable=true;
+  const grip=document.createElement('span');grip.className='plot-lane-grip';grip.title='Drag to move';grip.setAttribute('aria-label','Drag to move this idea');grip.innerHTML='<i class="ti ti-grip-vertical"></i>';grip.draggable=true;
   grip.addEventListener('dragstart',e=>{plotDragId=lane.id;plotDragMode='lane';row.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
-  grip.addEventListener('dragend',()=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-lane').forEach(x=>x.classList.remove('dragging','drop-before','drop-after'));});
-  const title=document.createElement('div');title.className='plot-lane-title';title.contentEditable='true';title.dataset.plotId=lane.id;title.dataset.placeholder='Name this storyline…';title.setAttribute('role','textbox');title.setAttribute('aria-label','Storyline name');
+  grip.addEventListener('dragend',()=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-lane').forEach(x=>x.classList.remove('dragging','drop-before','drop-after','drop-child'));});
+  const title=document.createElement('div');title.className='plot-lane-title';title.contentEditable='true';title.dataset.plotId=lane.id;title.dataset.placeholder='Name this idea…';title.setAttribute('role','textbox');title.setAttribute('aria-label','Idea name');
   renderMarkdownInto(title,lane.text||'');
   wireMdEditable(title,{get:()=>plotIdea(lane.id)?.text||'',set:v=>plotUpdateText(lane.id,v)},{onFocus:()=>{activePlotId=lane.id;},onKeydown:e=>{if(e.key==='Enter'){e.preventDefault();title.blur();}}});
-  const count=document.createElement('span');count.className='plot-lane-count';count.textContent=lane.children.length+' beat'+(lane.children.length===1?'':'s');
+  const count=document.createElement('span');count.className='plot-lane-count';count.textContent=lane.children.length+' idea'+(lane.children.length===1?'':'s');
   const actions=document.createElement('div');actions.className='plot-lane-actions';
   actions.append(renderPlotColorBtn(lane));
   const tagBtn=document.createElement('button');tagBtn.type='button';tagBtn.className='plot-icon-btn';tagBtn.title='Edit tags';tagBtn.innerHTML='<i class="ti ti-tag"></i>';tagBtn.onclick=e=>{e.stopPropagation();plotTagDialog(lane.id,tagBtn);};
   actions.appendChild(tagBtn);
-  const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='plot-icon-btn';delBtn.title='Delete storyline and its beats';delBtn.innerHTML='<i class="ti ti-trash"></i>';delBtn.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(lane.id,delBtn);};
+  const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='plot-icon-btn';delBtn.title='Delete idea and its children';delBtn.innerHTML='<i class="ti ti-trash"></i>';delBtn.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(lane.id,delBtn);};
   actions.appendChild(delBtn);
   head.append(grip,title,count,actions);
   const track=document.createElement('div');track.className='plot-lane-track';
@@ -924,45 +1006,55 @@ function renderPlotLane(lane){
     plotMove(plotDragId,lane.id,beats.filter(b=>b.id!==plotDragId).length);
   });
   beats.forEach(b=>track.appendChild(renderPlotBeat(b,beats,lane.id)));
-  const addBeat=document.createElement('button');addBeat.type='button';addBeat.className='plot-beat-add';addBeat.innerHTML='<i class="ti ti-plus"></i> Beat';
+  const addBeat=document.createElement('button');addBeat.type='button';addBeat.className='plot-beat-add';addBeat.innerHTML='<i class="ti ti-plus"></i> Idea';
   addBeat.onclick=()=>plotAdd(lane.id,beats.length?beats[beats.length-1].id:null);
   track.appendChild(addBeat);
   row.append(head,track);
   return row;
 }
 function renderPlotBeat(p,items,laneId){
-  const beat=document.createElement('div');beat.className='plot-beat'+(activePlotId===p.id?' selected':'');beat.draggable=true;beat.dataset.id=p.id;
+  const beat=document.createElement('div');beat.className='plot-beat'+(activePlotId===p.id?' selected':'');beat.dataset.id=p.id;
   plotApplyColorVar(beat,p);
-  beat.addEventListener('dragstart',e=>{plotDragId=p.id;plotDragMode='beat';beat.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.stopPropagation();});
-  beat.addEventListener('dragend',()=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-beat').forEach(x=>x.classList.remove('dragging','drop-before','drop-after'));});
+  // Dragging is scoped to the grip handle only, same reasoning as the
+  // corkboard card and tree-node grips — see the comment on renderPlotNode.
   beat.addEventListener('dragover',e=>{
     if(plotDragMode!=='beat'||plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
     e.preventDefault();e.stopPropagation();
-    const r=beat.getBoundingClientRect(),before=(e.clientX-r.left)<r.width/2;
-    beat.classList.toggle('drop-before',before);beat.classList.toggle('drop-after',!before);
+    const r=beat.getBoundingClientRect(),frac=(e.clientX-r.left)/r.width;
+    beat.classList.remove('drop-before','drop-after','drop-child');
+    if(frac<0.25)beat.classList.add('drop-before');
+    else if(frac>0.75)beat.classList.add('drop-after');
+    else beat.classList.add('drop-child');
   });
-  beat.addEventListener('dragleave',()=>beat.classList.remove('drop-before','drop-after'));
+  beat.addEventListener('dragleave',()=>beat.classList.remove('drop-before','drop-after','drop-child'));
   beat.addEventListener('drop',e=>{
     if(plotDragMode!=='beat')return;
     e.preventDefault();e.stopPropagation();
-    const before=beat.classList.contains('drop-before');beat.classList.remove('drop-before','drop-after');
+    const mode=beat.classList.contains('drop-before')?'before':beat.classList.contains('drop-after')?'after':'child';
+    beat.classList.remove('drop-before','drop-after','drop-child');
     if(plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
-    plotBoardReorder(plotDragId,laneId,items,p.id,before);
+    if(mode==='child'){plotMove(plotDragId,p.id,plotIdea(p.id).children.length);return;}
+    plotBoardReorder(plotDragId,laneId,items,p.id,mode==='before');
   });
   const head=document.createElement('div');head.className='plot-beat-head';
+  const grip=document.createElement('button');grip.type='button';grip.className='plot-beat-grip';grip.title='Drag to move';grip.setAttribute('aria-label','Drag to move this idea');grip.innerHTML='<i class="ti ti-grip-vertical"></i>';grip.draggable=true;
+  grip.addEventListener('click',e=>e.stopPropagation());
+  grip.addEventListener('dragstart',e=>{plotDragId=p.id;plotDragMode='beat';beat.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.stopPropagation();});
+  grip.addEventListener('dragend',e=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-beat').forEach(x=>x.classList.remove('dragging','drop-before','drop-after','drop-child'));e.stopPropagation();});
   const idBtn=document.createElement('button');idBtn.type='button';idBtn.className='plot-ref-id';idBtn.title='Copy reference [['+p.id+']]';idBtn.textContent=p.id;idBtn.onclick=async e=>{e.stopPropagation();await copyPlotIdeaRef(p.id);};
+  const left=document.createElement('div');left.className='plot-beat-head-left';left.append(grip,idBtn);
   const actions=document.createElement('div');actions.className='plot-beat-actions';
   const tagBtn=document.createElement('button');tagBtn.type='button';tagBtn.className='plot-icon-btn';tagBtn.title='Edit tags';tagBtn.innerHTML='<i class="ti ti-tag"></i>';tagBtn.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,tagBtn);};
   const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='plot-icon-btn';delBtn.title='Delete idea and children';delBtn.innerHTML='<i class="ti ti-trash"></i>';delBtn.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(p.id,delBtn);};
   actions.append(tagBtn,renderPlotColorBtn(p),delBtn);
-  head.append(idBtn,actions);
-  const ed=document.createElement('div');ed.className='plot-beat-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write a beat…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot beat');
+  head.append(left,actions);
+  const ed=document.createElement('div');ed.className='plot-beat-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write an idea…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot idea');
   renderMarkdownInto(ed,p.text||'');
   wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;document.querySelectorAll('.plot-beat.selected').forEach(x=>x.classList.remove('selected'));beat.classList.add('selected');}});
   beat.addEventListener('click',e=>{if(e.target.closest('button,.plot-beat-editor'))return;activePlotId=p.id;document.querySelectorAll('.plot-beat.selected').forEach(x=>x.classList.remove('selected'));beat.classList.add('selected');});
   beat.append(head,ed);
   if(p.tags.length){const ts=document.createElement('div');ts.className='plot-card-tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});beat.appendChild(ts);}
-  if(p.children.length){const more=document.createElement('button');more.type='button';more.className='plot-beat-more';more.textContent=p.children.length+' nested idea'+(p.children.length===1?'':'s')+' →';more.onclick=e=>{e.stopPropagation();setPlotView('board');plotFocusId=p.id;renderPlotWorkspace();};beat.appendChild(more);}
+  if(p.children.length){const more=document.createElement('button');more.type='button';more.className='plot-beat-more';more.textContent=p.children.length+' nested idea'+(p.children.length===1?'':'s')+' →';more.onclick=e=>{e.stopPropagation();plotFocusId=p.id;renderPlotWorkspace();};beat.appendChild(more);}
   return beat;
 }
 function openPlotWorkspace(){normalizePlotData();if(activePlotId&&!plotIdea(activePlotId))activePlotId=null;if(plotFocusId&&!plotIdea(plotFocusId))plotFocusId=null;document.getElementById('plot-workspace').classList.add('open');document.getElementById('plot-workspace').setAttribute('aria-hidden','false');renderPlotWorkspace();}
@@ -1014,7 +1106,11 @@ function init(){
   const tagInput=document.getElementById('chapter-tag-input');
   if(nameEdit){nameEdit.addEventListener('blur',saveChapterName);nameEdit.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nameEdit.blur();}});}
   if(aliasesEdit){aliasesEdit.addEventListener('blur',saveChapterAliases);aliasesEdit.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();aliasesEdit.blur();}});}
-  if(tagInput){tagInput.addEventListener('keydown',handleChapterTagKeydown);tagInput.addEventListener('blur',e=>{if(e.currentTarget.value.trim()){addChapterTag(e.currentTarget.value);e.currentTarget.value='';}});}
+  if(tagInput){
+    tagInput.addEventListener('input',()=>updateTagAutocomplete(tagInput,chapterTags(activeChapter()),tag=>{addChapterTag(tag);tagInput.value='';tagInput.focus();}));
+    tagInput.addEventListener('keydown',handleChapterTagKeydown);
+    tagInput.addEventListener('blur',e=>{setTimeout(()=>{if(document.activeElement!==tagInput)hideTagAC();},120);if(e.currentTarget.value.trim()&&!tagAcOpen()){addChapterTag(e.currentTarget.value);e.currentTarget.value='';}});
+  }
   loadNotesIntoUI();
 }
 
@@ -2057,6 +2153,7 @@ function updateChapterMetaSummary(){
   summary.textContent=bits.join(' · ');
 }
 function renderChapterMeta(){
+  hideTagAC();
   const ch=activeChapter();
   const name=document.getElementById('chapter-name-edit');
   const collLabel=document.getElementById('chapter-collection-label');
@@ -2150,7 +2247,13 @@ function removeChapterTag(tag){
   renderChapterTagChips();updateChapterMetaSummary();scheduleSave();
 }
 function handleChapterTagKeydown(e){
-  if(e.key==='Enter'||e.key===','){e.preventDefault();addChapterTag(e.currentTarget.value);e.currentTarget.value='';return;}
+  if(tagAcOpen()&&(e.key==='ArrowDown'||e.key==='ArrowUp')){e.preventDefault();moveTagAcSel(e.key==='ArrowDown'?1:-1);return;}
+  if(e.key==='Enter'||e.key===','){
+    e.preventDefault();
+    if(tagAcOpen()&&tagAcItems.length){addChapterTag(tagAcItems[tagAcSel]);e.currentTarget.value='';hideTagAC();return;}
+    addChapterTag(e.currentTarget.value);e.currentTarget.value='';hideTagAC();return;
+  }
+  if(e.key==='Escape'&&tagAcOpen()){hideTagAC();return;}
   if(e.key==='Backspace'&&!e.currentTarget.value&&chapterTags(activeChapter()).length){
     const tags=chapterTags(activeChapter());removeChapterTag(tags[tags.length-1]);
   }
