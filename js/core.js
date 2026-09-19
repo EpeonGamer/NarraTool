@@ -214,7 +214,7 @@ function persistProjectData(){
       localStorage.setItem('nw-collections',collectionsJson);
       localStorage.setItem('nw-plot-ideas',plotIdeasJson);
     }catch(e){
-      toast('Could not save — local storage is full. Export a .json backup now.');
+      toast('Could not save; local storage is full. Export a .json backup now.');
     }
   });
 }

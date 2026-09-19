@@ -55,8 +55,8 @@ function compileTxt({chapters=[],imgMap={}}){
   return chapters.map(ch=>{
     const h='─── '+ch.name+' ───';
     const body=(ch.blocks||[]).map(b=>{
-      if(b.type==='scene')return'\n— '+String(b.text||'').toUpperCase()+' —\n';
-      if(b.type==='image')return'[Image: images/'+(imgMap&&imgMap[b.id]?imgMap[b.id]:'?')+(b.caption?' — '+b.caption:'')+']';
+      if(b.type==='scene')return'\n- '+String(b.text||'').toUpperCase()+' -\n';
+      if(b.type==='image')return'[Image: images/'+(imgMap&&imgMap[b.id]?imgMap[b.id]:'?')+(b.caption?' - '+b.caption:'')+']';
       if(b.type==='group'){
         const lvl=b.level||0;
         return'\n'+'#'.repeat(lvl+1)+' '+(b.name||'Group')+'\n';

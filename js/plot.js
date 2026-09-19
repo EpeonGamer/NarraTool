@@ -410,6 +410,27 @@ function plotRevealNode(id){
     setTimeout(()=>node.classList.remove('plot-flash'),1200);
   });
 }
+function plotGoUp(){
+  if(!plotFocusId)return;
+  const p=plotIdea(plotFocusId);
+  plotFocusId=p&&p.parentId!=null?p.parentId:null;
+  renderPlotWorkspace();
+}
+function updatePlotGoUpBtn(){
+  const btn=document.getElementById('plot-go-up-btn');
+  if(!btn)return;
+  const canGoUp=!!plotFocusId;
+  btn.disabled=!canGoUp;
+  btn.setAttribute('aria-disabled',String(!canGoUp));
+  if(canGoUp){
+    const p=plotIdea(plotFocusId);
+    const parent=p&&p.parentId!=null?plotIdea(p.parentId):null;
+    const label=parent?(parent.text||'').trim()||'Untitled idea':'Story';
+    btn.title='Go up to '+(parent?'parent: ':'')+label;
+  }else{
+    btn.title='Already at the top level';
+  }
+}
 function plotBreadcrumb(){
   const el=document.getElementById('plot-crumb');el.innerHTML='';
   const home=document.createElement('button');home.type='button';home.className='plot-crumb-seg'+(plotFocusId?'':' current');home.textContent='Story';
@@ -426,6 +447,7 @@ function plotBreadcrumb(){
       el.appendChild(seg);
     });
   }
+  updatePlotGoUpBtn();
 }
 function setPlotView(v){
   plotView=(v==='board'||v==='timeline')?v:'tree';
@@ -495,7 +517,7 @@ function renderPlotCard(p,items,parentId){
   const card=document.createElement('div');card.className='plot-card'+(activePlotId===p.id?' selected':'');card.dataset.id=p.id;
   plotApplyColorVar(card,p);
   // Dragging is scoped to the grip handle only (see the tree-node comment
-  // above) — the whole card used to be draggable, which hijacked normal
+  // above); the whole card used to be draggable, which hijacked normal
   // text-selection drags inside the editor.
   card.addEventListener('dragover',e=>{
     if(plotDragMode!=='card'||plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
@@ -615,7 +637,7 @@ function renderPlotBeat(p,items,laneId){
   const beat=document.createElement('div');beat.className='plot-beat'+(activePlotId===p.id?' selected':'');beat.dataset.id=p.id;
   plotApplyColorVar(beat,p);
   // Dragging is scoped to the grip handle only, same reasoning as the
-  // corkboard card and tree-node grips — see the comment on renderPlotNode.
+  // corkboard card and tree-node grips; see the comment on renderPlotNode.
   beat.addEventListener('dragover',e=>{
     if(plotDragMode!=='beat'||plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
     e.preventDefault();e.stopPropagation();
@@ -696,7 +718,7 @@ async function init(){
   }
   loadNotesIntoUI();
 }
-// force=true always re-renders (chapter switch, undo/redo, import — the
+// force=true always re-renders (chapter switch, undo/redo, import; the
 // content genuinely needs to change under the user). Without force, skips
 // re-rendering while the field is focused so incidental re-renders elsewhere
 // (e.g. adding a block) don't clobber an in-progress edit or cursor position.
@@ -709,14 +731,14 @@ function loadNotesIntoUI(force){
 }
 function loadSample(){
   const sb=[
-    {type:'scene',text:'Chapter one — the morning of the last ordinary day'},
-    {type:'prose',text:'The kitchen smelled of burnt coffee and something else — something that hadn\'t been there the week before. Mara stood at the window, watching the fog roll in off the harbour, her fingers wrapped around a mug that had long since gone cold.'},
+    {type:'scene',text:'Chapter one | the morning of the last ordinary day'},
+    {type:'prose',text:'The kitchen smelled of burnt coffee and something else; something that hadn\'t been there the week before. Mara stood at the window, watching the fog roll in off the harbour, her fingers wrapped around a mug that had long since gone cold.'},
     {type:'action',text:'She set it down without drinking.'},
     {type:'dialogue',text:'"You\'re staring again," said Eli from the doorway. He didn\'t look up from his phone.'},
     {type:'prose',text:'Outside, a heron picked its way along the dock, deliberate as a surgeon. It had been there every morning for three years. She\'d never once seen it catch anything.'},
     {type:'thought',text:'Maybe that was the whole point. Maybe patience was the thing she\'d been misreading all along.'},
     {type:'dialogue',text:'"Mara." His voice was softer this time.'},
-    {type:'action',text:'She turned. He was looking at her now — really looking — and his phone was face-down on the counter.'},
+    {type:'action',text:'She turned. He was looking at her now; really looking; and his phone was face-down on the counter.'},
     {type:'prose',text:'Whatever she had been about to say dissolved somewhere between her chest and her teeth. The fog had reached the window. The heron was gone.'},
   ].map((b,i)=>({...b,id:i}));
   nextBlockId=sb.length;

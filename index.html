@@ -58,6 +58,7 @@
       </div>
       <div class="tb-sep"></div>
       <div class="tb-group">
+        <button class="tb-btn" onclick="openGlobalSearch()" id="search-btn" title="Search (Ctrl+K)"><i class="ti ti-search"></i></button>
         <button class="tb-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle dark mode"><i class="ti ti-moon"></i></button>
         <button class="tb-btn" onclick="toggleTypewriterMode()" id="typewriter-btn" title="Typewriter mode"><i class="ti ti-pencil"></i></button>
         <button class="tb-btn" onclick="openStats()" id="stats-btn" title="Manuscript statistics"><i class="ti ti-chart-bar"></i></button>
@@ -86,7 +87,7 @@
               </div>
               <div class="chapter-meta-row chapter-meta-input-row">
                 <label class="chapter-meta-label" for="chapter-aliases-edit">Aliases</label>
-                <input id="chapter-aliases-edit" class="chapter-meta-input" placeholder="e.g. Mara, M. Vale — names wiki-links can also use">
+                <input id="chapter-aliases-edit" class="chapter-meta-input" placeholder="e.g. Bill, B. Smith; names wiki-links can also use">
               </div>
               <div class="chapter-meta-row chapter-meta-tags-row">
                 <span class="chapter-meta-label">Tags</span>
@@ -120,6 +121,9 @@
 <div id="plot-workspace" aria-hidden="true">
   <div id="plot-toolbar">
     <strong id="plot-title">Plot Workspace</strong>
+    <button type="button" id="plot-go-up-btn" class="plot-toolbar-btn plot-go-up-btn" onclick="plotGoUp()" title="Go up one level to parent idea" aria-label="Go up one level" disabled>
+      <i class="ti ti-arrow-up"></i> <span>Back</span>
+    </button>
     <span id="plot-crumb" class="plot-crumb">Story</span>
     <div id="plot-view-toggle" class="plot-view-toggle">
       <button id="plot-view-tree" class="plot-view-toggle-btn" title="Outline view" onclick="setPlotView('tree')"><i class="ti ti-list-tree"></i></button>
@@ -129,7 +133,7 @@
     <input id="plot-search" class="plot-search" placeholder="Search ideas…" oninput="renderPlotWorkspace()">
     <select id="plot-sort" class="plot-filter-input" title="Sort the current view" onchange="renderPlotWorkspace()">
       <option value="story">Story order</option>
-      <option value="az">A–Z</option>
+      <option value="az">A-Z</option>
     </select>
     <button class="plot-toolbar-btn" onclick="togglePlotFilters()"><i class="ti ti-adjustments-horizontal"></i> <span>Filter</span></button>
     <button class="plot-toolbar-btn" onclick="plotAdd(plotFocusId,null)"><i class="ti ti-plus"></i> <span>New idea</span></button>
@@ -191,7 +195,7 @@
   </button>
   <button class="export-opt" onclick="doExport('json')">
     <i class="ti ti-braces"></i>
-    <span><span>JSON</span><span class="export-opt-sub">Reimportable — merges on import</span></span>
+    <span><span>JSON</span><span class="export-opt-sub">Reimportable; merges on import</span></span>
   </button>
   <button class="export-opt disabled">
     <i class="ti ti-file-type-pdf"></i>
@@ -205,7 +209,7 @@
     <div class="stats-grid">
       <div class="stats-cardlet"><span>Words</span><strong id="stats-words">0</strong></div>
       <div class="stats-cardlet"><span>Reading time</span><strong id="stats-reading">0 min</strong></div>
-      <div class="stats-cardlet"><span>Readability</span><strong id="stats-readability">—</strong><small id="stats-readability-label"></small></div>
+      <div class="stats-cardlet"><span>Readability</span><strong id="stats-readability">-</strong><small id="stats-readability-label"></small></div>
       <div class="stats-cardlet"><span>Session</span><strong id="stats-session">0 / 500</strong><small id="stats-session-label">words</small></div>
     </div>
     <div class="stats-section">
@@ -296,7 +300,7 @@
 <div id="toast"></div>
 <div id="backup-nudge">
   <i class="ti ti-device-floppy"></i>
-  <span class="bn-text">It's been a while since you exported a backup — this browser can't auto-save to disk, so a stray cache clear could lose your work.</span>
+  <span class="bn-text">It's been a while since you exported a backup; this browser can't auto-save to disk, so a stray cache clear could lose your work.</span>
   <button class="bn-export" onclick="exportFromNudge()">Export .json</button>
   <button onclick="dismissBackupNudge(true)">Later</button>
   <button class="bn-close" onclick="dismissBackupNudge(false)" title="Dismiss"><i class="ti ti-x"></i></button>

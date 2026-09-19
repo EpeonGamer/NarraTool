@@ -22,7 +22,7 @@ function render(){
 // Builds/reconciles only the blocks that should currently be in the DOM
 // (the "window"). Existing wrap/drop-zone nodes are reused by block id, so
 // this is safe (and cheap) to call both for a full render and for a
-// scroll-triggered window shift — it never touches nodes for blocks whose
+// scroll-triggered window shift; it never touches nodes for blocks whose
 // position and type haven't changed.
 function renderBlocksVirtualized(addBar){
   const editor=document.getElementById('editor');
@@ -234,7 +234,7 @@ function buildGroupBlock(b,inner,i,bs){
     applyGroupCollapse(b);
     chevron.style.transform=b.collapsed?'rotate(-90deg)':'';
   };
-  // Level selector — small number badge
+  // Level selector; small number badge
   const lvlBadge=document.createElement('button');
   lvlBadge.title='Group level (click to increase, right-click to decrease)';
   lvlBadge.style.cssText=`font-size:9px;font-weight:600;width:16px;height:16px;border-radius:50%;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;`;

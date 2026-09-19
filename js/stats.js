@@ -71,7 +71,7 @@ function renderStatsModal(){
   document.getElementById('stats-subtitle').textContent=target.name;
   document.getElementById('stats-words').textContent=target.words.toLocaleString();
   document.getElementById('stats-reading').textContent=Math.max(1,Math.ceil(target.words/200))+' min';
-  document.getElementById('stats-readability').textContent=score==null?'—':score.toFixed(0);
+  document.getElementById('stats-readability').textContent=score==null?'-':score.toFixed(0);
   document.getElementById('stats-readability-label').textContent=readabilityLabel(score);
   document.getElementById('session-goal-input').value=writingStats.goal||500;
   document.getElementById('streak-gap-input').value=Math.max(0,Math.min(30,writingStats.streakGap||0));

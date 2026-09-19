@@ -9,7 +9,6 @@ function addBlock(type,afterIndex,opts){
   else ch.blocks.push(nb);
   focusedId=nb.id;
   render();
-  // For image blocks, immediately trigger upload
   if(type==='image'){
     setTimeout(()=>triggerImageUpload(nb.id),100);
   } else {
@@ -26,7 +25,6 @@ function addBlock(type,afterIndex,opts){
   }
   save();
 }
-/** Split the current block at the caret: text after the cursor moves into a new sibling block. */
 function splitBlockAtCaret(el,block,index){
   if(!el||!block)return;
   const raw=el.textContent||'';
