@@ -1,3 +1,5 @@
+
+function currentBlockIndex(id){return blocks().findIndex(bl=>bl.id===id);}
 function render(){
   document.body.classList.toggle('clean-view',viewMode==='clean');
   const editor=document.getElementById('editor');
@@ -50,13 +52,14 @@ function renderBlocksVirtualized(addBar){
   for(let i=start;i<end;i++){
     const b=bs[i];
     let entry=blockDom.get(b.id);
-    if(!entry||entry.type!==b.type){
+    const staleGroup=b.type==='group'&&entry&&entry.level!==(b.level||0);
+    if(!entry||entry.type!==b.type||staleGroup){
       if(entry){entry.wrap.remove();entry.dz.remove();entry.ro&&entry.ro.disconnect();}
       const dz=document.createElement('div');dz.className='drop-zone';
       const wrap=buildBlockWrap(b,i,bs);
       const ro=new ResizeObserver(()=>recordHeight(b.id,wrap.offsetHeight));
       ro.observe(wrap);
-      entry={wrap,dz,type:b.type,ro};
+      entry={wrap,dz,type:b.type,ro,level:b.type==='group'?(b.level||0):undefined};
       blockDom.set(b.id,entry);
     }else{
       entry.wrap.classList.toggle('block-focused',focusedId===b.id);
@@ -98,7 +101,7 @@ function buildBlockWrap(b,i,bs){
     <div class="drag-handle" title="Drag to reorder" data-drag="${b.id}"><i class="ti ti-grip-vertical"></i></div>
     <button class="gutter-btn" title="Delete block" onclick="deleteBlock(${b.id})"><i class="ti ti-trash"></i></button>
     <button class="gutter-btn" title="Change type" onclick="openPicker(event,${b.id})"><i class="ti ti-dots"></i></button>
-    <button class="gutter-btn" title="Add block below" onclick="addBlock('${b.type}',${i+1})"><i class="ti ti-plus"></i></button>
+    <button class="gutter-btn" title="Add block below" onclick="addBlock('${b.type}',currentBlockIndex(${b.id})+1)"><i class="ti ti-plus"></i></button>
   </div>`;
   const content=document.createElement('div');
   content.className='block-content';
@@ -123,7 +126,7 @@ function buildBlockWrap(b,i,bs){
     wireMdEditable(p,{get:()=>b.text,set:v=>{const old=countWords(b.text);b.text=v;recordWritingWords(Math.max(0,countWords(v)-old));scheduleSave();updateStats();}},{
       onFocus:()=>{focusedId=b.id;if(viewMode==='focus'||settings.typewriter)refreshFocusClasses();},
       onBlur:()=>save(),
-      onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();splitBlockAtCaret(p,b,i);}}
+      onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();splitBlockAtCaret(p,b,currentBlockIndex(b.id));}}
     });
     inner.appendChild(label);inner.appendChild(p);
   }
@@ -207,7 +210,7 @@ function buildCustomBlock(b,inner,i){
   wireMdEditable(p,{get:()=>b.text,set:v=>{const old=countWords(b.text);b.text=v;recordWritingWords(Math.max(0,countWords(v)-old));scheduleSave();updateStats();}},{
     onFocus:()=>{focusedId=b.id;if(viewMode==='focus'||settings.typewriter)refreshFocusClasses();},
     onBlur:()=>save(),
-    onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();splitBlockAtCaret(p,b,i);}}
+    onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();splitBlockAtCaret(p,b,currentBlockIndex(b.id));}}
   });
   inner.appendChild(p);
 }
