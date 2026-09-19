@@ -76,3 +76,8 @@ js/
 index.html              # Main application entry point
 styles.css             # Application styling and view modes
 ```
+
+## License
+
+Copyright (c) 2026 Epeon. All rights reserved. 
+Available under a custom non-commercial, non-repackaging license. See [LICENSE](LICENSE.md) for full details.
