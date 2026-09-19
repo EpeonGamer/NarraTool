@@ -1,3 +1,4 @@
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --bg:#ffffff; --bg2:#f7f7f5; --bg3:#f0efec;
@@ -246,6 +247,9 @@
   .md-mark.md-mark-hidden.md-mark-revealed{font-size:inherit!important;opacity:.45!important;}
   .md-bold b{font-weight:700;}
   .md-italic i{font-style:italic;}
+  /* Emphasis inside already-italic dialogue/thought: switch to roman so *this* is visible */
+  .type-dialogue .md-italic i,
+  .type-thought .md-italic i{font-style:normal;}
   .md-link{color:var(--prose-accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb, var(--prose-accent) 40%, transparent);cursor:text;}
   .md-link:hover{border-bottom-style:solid;cursor:pointer;}
   .md-link.unresolved{color:var(--text3);border-bottom:1px dashed var(--border2);}
