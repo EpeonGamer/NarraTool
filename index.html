@@ -36,6 +36,7 @@
         <div class="stat-row"><span class="stat-label">Read time:</span><span class="stat-val" id="rt">0 min</span></div>
         <div class="stat-total" id="total-wc"></div>
       </div>
+      <button class="side-btn" onclick="openStats()"><i class="ti ti-chart-bar"></i><span class="side-label hide-collapsed">Statistics & Goals</span></button>
       <button class="side-btn" id="backup-status-btn" onclick="handleBackupClick()" title="Local backup status">
         <span class="icon-badge-wrap"><i class="ti ti-device-floppy" id="backup-status-icon"></i><span class="save-dot" id="save-status-dot" title="Unsaved changes"></span></span><span class="side-label hide-collapsed" id="backup-status-label">Checking backup…</span>
       </button>
@@ -59,6 +60,8 @@
       <div class="tb-sep"></div>
       <div class="tb-group">
         <button class="tb-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle dark mode"><i class="ti ti-moon"></i></button>
+        <button class="tb-btn" onclick="toggleTypewriterMode()" id="typewriter-btn" title="Typewriter mode"><i class="ti ti-pencil"></i></button>
+        <button class="tb-btn" onclick="openStats()" id="stats-btn" title="Manuscript statistics"><i class="ti ti-chart-bar"></i></button>
         <button class="tb-btn" onclick="toggleSettings()" id="settings-btn" title="Settings"><i class="ti ti-adjustments-horizontal"></i></button>
       </div>
       <div id="topbar-right">
@@ -195,6 +198,33 @@
     <i class="ti ti-file-type-pdf"></i>
     <span><span>PDF <span style="font-size:10px;opacity:0.6">coming soon</span></span><span class="export-opt-sub">Formatted document</span></span>
   </button>
+</div>
+
+<div id="stats-modal" class="nw-modal" aria-hidden="true">
+  <div class="nw-modal-card stats-card" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+    <div class="nw-modal-head"><div><div id="stats-title" class="nw-modal-title">Manuscript statistics</div><div id="stats-subtitle" class="nw-modal-subtitle"></div></div><button class="gutter-btn" onclick="closeStats()" title="Close"><i class="ti ti-x"></i></button></div>
+    <div class="stats-tabs"><button class="seg-btn active" id="stats-scope-chapter" onclick="setStatsScope('chapter')">Chapter</button><button class="seg-btn" id="stats-scope-collection" onclick="setStatsScope('collection')">Collection</button></div>
+    <div class="stats-grid">
+      <div class="stats-cardlet"><span>Words</span><strong id="stats-words">0</strong></div>
+      <div class="stats-cardlet"><span>Reading time</span><strong id="stats-reading">0 min</strong></div>
+      <div class="stats-cardlet"><span>Readability</span><strong id="stats-readability">—</strong><small id="stats-readability-label"></small></div>
+      <div class="stats-cardlet"><span>Session</span><strong id="stats-session">0 / 500</strong><small id="stats-session-label">words</small></div>
+    </div>
+    <div class="stats-section">
+      <div class="stats-section-title">Writing goal</div>
+      <div class="stats-goal-row"><label for="session-goal-input">Session target</label><input id="session-goal-input" type="number" min="1" step="50" value="500"><span>words</span><button class="seg-btn active" onclick="saveSessionGoal()">Save</button></div>
+      <div class="stats-progress"><div id="stats-session-progress"></div></div>
+    </div>
+    <div class="stats-section">
+      <div class="stats-section-title">Daily writing streak</div>
+      <div class="stats-streak"><strong id="stats-streak-count">0</strong><span id="stats-streak-label">days</span><span id="stats-streak-detail"></span></div>
+    </div>
+    <div class="stats-section stats-mini-grid">
+      <div><span>All manuscript</span><strong id="stats-all-words">0</strong></div>
+      <div><span>Chapters</span><strong id="stats-all-chapters">0</strong></div>
+      <div><span>Est. reading time</span><strong id="stats-all-reading">0 min</strong></div>
+    </div>
+  </div>
 </div>
 <div id="color-picker-popup"></div>
 <div id="settings-panel">
