@@ -549,7 +549,13 @@
 .plot-node{display:flex;align-items:flex-start;gap:5px;flex:1;min-width:0;border:1px solid transparent;border-radius:5px;padding:4px 5px;background:transparent;}
 .plot-node:hover{background:var(--bg2)}.plot-node.selected{background:var(--bg2);border-color:var(--thought-accent)}.plot-node.match{background:color-mix(in srgb,var(--thought-accent) 7%,var(--bg2))}
 .plot-node-editor{flex:1;min-width:0;outline:none;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;padding:2px 0;min-height:22px;}.plot-node-editor:empty:before{content:attr(data-placeholder);color:var(--muted)}.plot-node-editor:empty{min-height:22px}
-.plot-gutter{display:flex;gap:1px;flex-shrink:0;opacity:.35;transition:opacity .12s}.plot-node:hover .plot-gutter,.plot-node.selected .plot-gutter,.plot-node-editor:focus~*{opacity:1}.plot-icon-btn{width:23px;height:23px;border:0;background:transparent;color:var(--muted);border-radius:4px;cursor:pointer;padding:0}.plot-icon-btn:hover{background:var(--hover);color:var(--text)}
+.plot-gutter{display:flex;align-items:flex-start;gap:2px;flex-shrink:0;opacity:.35;transition:opacity .12s}.plot-node:hover .plot-gutter,.plot-node.selected .plot-gutter,.plot-node-editor:focus~*{opacity:1}.plot-icon-btn{width:23px;height:23px;border:0;background:transparent;color:var(--muted);border-radius:4px;cursor:pointer;padding:0}.plot-icon-btn:hover{background:var(--hover);color:var(--text)}
+/* Node action grid: same row-reverse + wrap trick as the scene-block gutter, so the four action buttons form a compact 2-col grid instead of a long single row */
+.plot-gutter-grid{display:flex;flex-direction:row-reverse;flex-wrap:wrap;gap:2px;width:48px;align-content:flex-start}
+.plot-gutter-grid .plot-icon-btn{width:23px;height:23px;border-radius:50%}
+.plot-grip-btn{width:23px;height:23px;border-radius:50%;border:0;background:transparent;padding:0;display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:grab;touch-action:none}
+.plot-grip-btn:hover{color:var(--text)}
+.plot-grip-btn:active{cursor:grabbing}
 .plot-ref-id{height:23px;padding:0 6px;border:0;border-radius:4px;background:transparent;color:var(--text3);font:500 10px var(--sans);letter-spacing:.02em;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s} .plot-ref-id:hover{background:var(--hover);color:var(--text)} .plot-ref-id:focus-visible{outline:1px solid var(--thought-accent);outline-offset:1px}
 .plot-tags{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 2px 56px}.plot-tag{font-size:10px;border:1px solid var(--border2);border-radius:10px;padding:1px 6px;color:var(--muted)}
 .plot-tag-editor{position:fixed;z-index:900;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:9px;min-width:240px;max-width:340px}.plot-tag-editor-title{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:7px}.plot-tag-editor-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}.plot-tag-editor .chapter-tag-chip{font-size:11px}.plot-tag-editor-input{width:100%;border:0;background:transparent;outline:none;color:var(--text);font:12px var(--sans);padding:5px 2px}.plot-tag-editor-input::placeholder{color:var(--text3)}.plot-tag-editor-help{font-size:10px;color:var(--text3);margin-top:4px}
@@ -586,6 +592,8 @@
 .plot-color-swatch.none{background:var(--bg);border:1.5px dashed var(--border2);position:relative}
 .plot-color-swatch.none:after{content:"";position:absolute;left:4px;right:4px;top:50%;height:1.5px;background:var(--text3);transform:rotate(-45deg)}
 .plot-color-swatch.none.active{border-style:solid;border-color:var(--text)}
+.plot-color-swatch.plot-color-custom{background:conic-gradient(from 180deg,#E5484D,#F2994A,#D4B84A,#6BAE5E,#3DB9A8,#5D9FE8,#9B6FE0,#E36BA6,#E5484D);position:relative;overflow:hidden;padding:0}
+.plot-color-swatch.plot-color-custom input[type=color]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
 .plot-node{position:relative}
 .plot-node:before{content:"";position:absolute;left:2px;top:4px;bottom:4px;width:3px;border-radius:2px;background:transparent}
 #plot-workspace.colors-active .plot-node{padding-left:10px}
@@ -1361,7 +1369,7 @@ function normalizePlotData(){
     p.tags=Array.isArray(p.tags)?p.tags.filter(x=>typeof x==='string'):[];
     p.links=Array.isArray(p.links)?p.links.filter(x=>typeof x==='string'):[];
     if(typeof p.text!=='string')p.text='';
-    p.color=(typeof p.color==='string'&&PLOT_COLOR_HEX[p.color])?p.color:null;
+    p.color=(typeof p.color==='string'&&(PLOT_COLOR_HEX[p.color]||/^#([0-9a-f]{3}){1,2}$/i.test(p.color)))?p.color.toLowerCase():null;
     // Keep links as the contents of [[...]]; Plot Ideas use their short ID.
     p.links=[...new Set(p.links.map(x=>oldToNew.get(String(x))||String(x).trim()).filter(Boolean))];
   });
@@ -1441,6 +1449,12 @@ function plotDeleteWithConfirm(id,anchor){
   const label=(p.text||'Untitled idea').trim()||'Untitled idea';
   appConfirm('Delete '+JSON.stringify(label)+' and all of its children?','Delete',()=>plotDelete(id),anchor);
 }
+function plotColorHex(c){if(!c)return null;if(PLOT_COLOR_HEX[c])return PLOT_COLOR_HEX[c];if(/^#([0-9a-f]{3}){1,2}$/i.test(c))return c;return null;}
+function plotUsedCustomColors(){
+  const set=new Set();
+  plotIdeas.forEach(p=>{if(p&&typeof p.color==='string'&&!PLOT_COLOR_HEX[p.color])set.add(p.color.toLowerCase());});
+  return [...set];
+}
 function plotColorDialog(id,anchor){
   const p=plotIdea(id);if(!p)return;
   closePlotDialog();
@@ -1454,17 +1468,33 @@ function plotColorDialog(id,anchor){
     const b=document.createElement('button');b.type='button';b.className='plot-color-swatch'+(p.color===c.id?' active':'');b.style.background=c.hex;b.title=c.id;b.setAttribute('aria-label',c.id);b.onclick=()=>pick(c.id);
     grid.appendChild(b);
   });
+  // Custom colors — the same swatches available to custom text blocks in the
+  // manuscript, plus any custom hex already chosen on other ideas, so a
+  // custom color stays reusable/consistent across the project rather than
+  // being a one-off pick each time.
+  const customPool=[...new Set([...CUSTOM_COLORS.map(c=>c.toLowerCase()),...plotUsedCustomColors()])];
+  customPool.forEach(hex=>{
+    const b=document.createElement('button');b.type='button';b.className='plot-color-swatch'+(typeof p.color==='string'&&p.color.toLowerCase()===hex?' active':'');b.style.background=hex;b.title=hex;b.setAttribute('aria-label','Custom color '+hex);b.onclick=()=>pick(hex);
+    grid.appendChild(b);
+  });
+  const custom=document.createElement('label');custom.className='plot-color-swatch plot-color-custom';custom.title='Pick any custom color';
+  const nativeInput=document.createElement('input');nativeInput.type='color';nativeInput.setAttribute('aria-label','Pick a custom color');
+  nativeInput.value=(typeof p.color==='string'&&/^#/.test(p.color))?p.color:'#7F77DD';
+  nativeInput.addEventListener('input',()=>pick(nativeInput.value.toLowerCase()));
+  custom.appendChild(nativeInput);
+  grid.appendChild(custom);
   d.appendChild(grid);
   document.body.appendChild(d);positionPlotPopover(d,anchor);
 }
 function renderPlotColorBtn(p){
   const btn=document.createElement('button');btn.type='button';btn.className='plot-icon-btn plot-color-btn';btn.title='Set color';btn.setAttribute('aria-label','Set color for this idea');
-  const dot=document.createElement('span');dot.className='plot-color-dot'+(p.color?'':' empty');if(p.color)dot.style.background=PLOT_COLOR_HEX[p.color]||'';
+  const hex=plotColorHex(p.color);
+  const dot=document.createElement('span');dot.className='plot-color-dot'+(hex?'':' empty');if(hex)dot.style.background=hex;
   btn.appendChild(dot);
   btn.onclick=e=>{e.stopPropagation();plotColorDialog(p.id,btn);};
   return btn;
 }
-function plotApplyColorVar(el,p){if(p.color)el.style.setProperty('--plot-color',PLOT_COLOR_HEX[p.color]);else el.style.removeProperty('--plot-color');}
+function plotApplyColorVar(el,p){const hex=plotColorHex(p.color);if(hex)el.style.setProperty('--plot-color',hex);else el.style.removeProperty('--plot-color');}
 function plotTagDialog(id,anchor){
   const p=plotIdea(id);if(!p)return;
   closePlotDialog();
@@ -1540,10 +1570,8 @@ function renderPlotNode(p,visible){
   if(visible&&!visible.has(p.id))return null;
   const branch=document.createElement('div');branch.className='plot-branch';branch.dataset.id=p.id;
   const row=document.createElement('div');row.className='plot-node-row';
-  const node=document.createElement('div');node.className='plot-node'+(activePlotId===p.id?' selected':'');node.draggable=true;
+  const node=document.createElement('div');node.className='plot-node'+(activePlotId===p.id?' selected':'');
   plotApplyColorVar(node,p);
-  node.addEventListener('dragstart',e=>{plotDragId=p.id;plotDragMode='tree';node.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
-  node.addEventListener('dragend',()=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-node,.plot-search-result').forEach(x=>x.classList.remove('dragging','plot-drop-child','plot-drop-before','plot-drop-after'));});
   node.addEventListener('dragover',e=>{
     if(plotDragMode!=='tree'||plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
     e.preventDefault();
@@ -1567,10 +1595,21 @@ function renderPlotNode(p,visible){
   const gutter=document.createElement('div');gutter.className='plot-gutter';
   if(p.children.length){const c=document.createElement('button');c.className='plot-icon-btn';c.title=plotCollapsed.has(p.id)?'Expand children':'Collapse children';c.innerHTML='<i class="ti '+(plotCollapsed.has(p.id)?'ti-chevron-right':'ti-chevron-down')+'"></i>';c.onclick=e=>{e.stopPropagation();plotCollapsed.has(p.id)?plotCollapsed.delete(p.id):plotCollapsed.add(p.id);renderPlotWorkspace();};gutter.appendChild(c);}
   const ref=document.createElement('button');ref.className='plot-ref-id';ref.type='button';ref.title='Copy reference [['+p.id+']]';ref.textContent=p.id;ref.onclick=async e=>{e.stopPropagation();await copyPlotIdeaRef(p.id);};gutter.appendChild(ref);
-  const del=document.createElement('button');del.className='plot-icon-btn';del.type='button';del.title='Delete idea and children';del.innerHTML='<i class="ti ti-trash"></i>';del.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(p.id,del);};gutter.appendChild(del);
-  const next=document.createElement('button');next.className='plot-icon-btn';next.title='Add next idea (Enter)';next.innerHTML='<i class="ti ti-plus"></i>';next.onclick=e=>{e.stopPropagation();plotAdd(p.parentId,p.id);};gutter.appendChild(next);
-  const tags=document.createElement('button');tags.className='plot-icon-btn';tags.title='Edit tags';tags.innerHTML='<i class="ti ti-tag"></i>';tags.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,tags);};gutter.appendChild(tags);
-  gutter.appendChild(renderPlotColorBtn(p));
+  // Action buttons live in their own small grid (like the scene-block gutter)
+  // rather than a single row, and dragging is scoped to the grip handle only —
+  // dragging used to be enabled on the whole node, which hijacked normal
+  // text-selection drags inside the editor.
+  const grid=document.createElement('div');grid.className='plot-gutter-grid';
+  const grip=document.createElement('button');grip.type='button';grip.className='plot-grip-btn';grip.title='Drag to reorder';grip.setAttribute('aria-label','Drag to reorder this idea');grip.innerHTML='<i class="ti ti-grip-vertical"></i>';grip.draggable=true;
+  grip.addEventListener('click',e=>e.stopPropagation());
+  grip.addEventListener('dragstart',e=>{plotDragId=p.id;plotDragMode='tree';node.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.stopPropagation();});
+  grip.addEventListener('dragend',e=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-node,.plot-search-result').forEach(x=>x.classList.remove('dragging','plot-drop-child','plot-drop-before','plot-drop-after'));e.stopPropagation();});
+  grid.appendChild(grip);
+  const del=document.createElement('button');del.className='plot-icon-btn';del.type='button';del.title='Delete idea and children';del.innerHTML='<i class="ti ti-trash"></i>';del.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(p.id,del);};grid.appendChild(del);
+  const next=document.createElement('button');next.className='plot-icon-btn';next.title='Add next idea (Enter)';next.innerHTML='<i class="ti ti-plus"></i>';next.onclick=e=>{e.stopPropagation();plotAdd(p.parentId,p.id);};grid.appendChild(next);
+  const tags=document.createElement('button');tags.className='plot-icon-btn';tags.title='Edit tags';tags.innerHTML='<i class="ti ti-tag"></i>';tags.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,tags);};grid.appendChild(tags);
+  grid.appendChild(renderPlotColorBtn(p));
+  gutter.appendChild(grid);
   node.append(gutter,renderPlotEditor(p));
   if(p.children.length){const meta=document.createElement('span');meta.className='plot-meta';meta.textContent=p.children.length+' child'+(p.children.length===1?'':'ren');node.appendChild(meta);}
   row.appendChild(node);branch.appendChild(row);
