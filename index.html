@@ -353,11 +353,17 @@
   .md-link.unresolved:hover{color:var(--text2);}
 
   /* ── Wiki-link autocomplete ── */
-  #wikilink-ac{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.14);padding:4px;z-index:500;display:none;flex-direction:column;gap:1px;min-width:200px;max-width:280px;max-height:220px;overflow-y:auto;}
+  #wikilink-ac{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.14);padding:4px;z-index:500;display:none;flex-direction:column;gap:1px;min-width:200px;max-width:280px;max-height:220px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+  #wikilink-ac::-webkit-scrollbar{width:6px;}
+  #wikilink-ac::-webkit-scrollbar-track{background:transparent;}
+  #wikilink-ac::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+  #wikilink-ac::-webkit-scrollbar-thumb:hover{background:var(--text3);}
   #wikilink-ac.open{display:flex;}
-  .wac-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius-sm);font-size:13px;color:var(--text2);cursor:pointer;}
+  .wac-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius-sm);font-size:13px;color:var(--text2);cursor:pointer;min-width:0;}
   .wac-item.sel,.wac-item:hover{background:var(--bg2);color:var(--text);}
   .wac-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .wac-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .wac-id{flex-shrink:0;max-width:82px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text3);font-size:11px;}
   .wac-new{color:var(--text3);font-style:italic;}
 
   /* ── Chapter tag dot ── */
@@ -456,7 +462,7 @@
 
   /* Toast */
   /* Confirm popup */
-  #confirm-popup{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:12px 14px;z-index:400;display:none;flex-direction:column;gap:10px;min-width:180px;max-width:240px;}
+  #confirm-popup{position:fixed;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 24px rgba(0,0,0,0.12);padding:12px 14px;z-index:6000;display:none;flex-direction:column;gap:10px;min-width:180px;max-width:240px;}
   #confirm-popup.open{display:flex;}
   #confirm-msg{font-size:13px;color:var(--text);line-height:1.4;}
   #confirm-btns{display:flex;gap:6px;justify-content:flex-end;}
@@ -464,7 +470,7 @@
   .confirm-yes:hover{background:#a93226;}
   .confirm-no{font-size:12px;padding:4px 12px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:transparent;color:var(--text2);cursor:pointer;transition:background 0.15s;}
   .confirm-no:hover{background:var(--bg2);}
-  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:var(--bg);font-size:13px;padding:8px 18px;border-radius:20px;transition:transform 0.3s;z-index:300;pointer-events:none;}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:var(--bg);border:1px solid var(--border2);font-size:13px;padding:8px 18px;border-radius:20px;box-shadow:0 6px 20px rgba(0,0,0,.16);transition:transform 0.3s;z-index:7000;pointer-events:none;}
   #toast.show{transform:translateX(-50%) translateY(0);}
   #backup-nudge{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(140px);display:flex;align-items:center;gap:10px;background:var(--bg);border:0.5px solid var(--border2);box-shadow:0 6px 24px rgba(0,0,0,0.18);border-radius:var(--radius);padding:10px 10px 10px 14px;font-size:13px;color:var(--text);z-index:310;max-width:min(92vw,440px);transition:transform 0.3s ease;pointer-events:none;}
   #backup-nudge.show{transform:translateX(-50%) translateY(0);pointer-events:auto;}
@@ -516,6 +522,31 @@
     #editor{padding:0 0.5rem;}
     #settings-panel{width:100%;}
   }
+
+/* Plot Workspace */
+#plot-workspace{display:none;position:fixed;inset:0;z-index:500;background:var(--bg);color:var(--text);}
+#plot-workspace.open{display:flex;flex-direction:column;}
+#plot-toolbar{height:54px;border-bottom:.5px solid var(--border2);display:flex;align-items:center;gap:8px;padding:0 14px;flex-shrink:0;background:var(--bg2);}
+
+
+#plot-title{font-weight:600;white-space:nowrap}.plot-crumb{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.plot-help{font-size:10px;color:var(--muted);white-space:nowrap}.plot-search{width:260px;max-width:28vw;background:var(--input);border:.5px solid var(--border2);border-radius:6px;padding:7px 9px;color:var(--text);outline:none;}
+.plot-toolbar-btn{border:.5px solid var(--border2);background:var(--bg);color:var(--text);border-radius:6px;padding:7px 9px;cursor:pointer}.plot-toolbar-btn:hover{background:var(--hover)}
+#plot-filterbar{display:none;border-bottom:.5px solid var(--border2);padding:7px 14px;gap:8px;align-items:center;background:var(--bg2)}#plot-filterbar.open{display:flex}.plot-filter-input{background:var(--input);border:.5px solid var(--border2);border-radius:5px;padding:6px 8px;color:var(--text);outline:none;}
+#plot-canvas{flex:1;overflow:auto;padding:28px 32px 80px;}.plot-empty{max-width:620px;margin:90px auto;text-align:center;color:var(--muted)}
+.plot-root-list{display:flex;flex-direction:column;gap:7px;min-width:min(900px,100%);max-width:1100px;margin:0 auto;}
+.plot-branch{position:relative;margin-left:26px;padding-left:22px;border-left:1px solid var(--border2);}.plot-root-list>.plot-branch{margin-left:0;padding-left:0;border-left:0}.plot-children{display:flex;flex-direction:column;gap:3px;margin-top:3px}.plot-children.collapsed{display:none}
+.plot-node-row{display:flex;align-items:flex-start;gap:3px;position:relative;min-height:34px}.plot-branch>.plot-node-row:before{content:"";position:absolute;left:-23px;top:17px;width:22px;border-top:1px solid var(--border2)}.plot-root-list>.plot-branch>.plot-node-row:before{display:none}
+.plot-node{display:flex;align-items:flex-start;gap:5px;flex:1;min-width:0;border:1px solid transparent;border-radius:5px;padding:4px 5px;background:transparent;}
+.plot-node:hover{background:var(--bg2)}.plot-node.selected{background:var(--bg2);border-color:var(--thought-accent)}.plot-node.match{background:color-mix(in srgb,var(--thought-accent) 7%,var(--bg2))}
+.plot-node-editor{flex:1;min-width:0;outline:none;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;padding:2px 0;min-height:22px;}.plot-node-editor:empty:before{content:attr(data-placeholder);color:var(--muted)}.plot-node-editor:empty{min-height:22px}
+.plot-gutter{display:flex;gap:1px;flex-shrink:0;opacity:.35;transition:opacity .12s}.plot-node:hover .plot-gutter,.plot-node.selected .plot-gutter,.plot-node-editor:focus~*{opacity:1}.plot-icon-btn{width:23px;height:23px;border:0;background:transparent;color:var(--muted);border-radius:4px;cursor:pointer;padding:0}.plot-icon-btn:hover{background:var(--hover);color:var(--text)}
+.plot-ref-id{height:23px;padding:0 6px;border:0;border-radius:4px;background:transparent;color:var(--text3);font:500 10px var(--sans);letter-spacing:.02em;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s} .plot-ref-id:hover{background:var(--hover);color:var(--text)} .plot-ref-id:focus-visible{outline:1px solid var(--thought-accent);outline-offset:1px}
+.plot-tags{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 2px 56px}.plot-tag{font-size:10px;border:1px solid var(--border2);border-radius:10px;padding:1px 6px;color:var(--muted)}
+.plot-tag-editor{position:fixed;z-index:900;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:9px;min-width:240px;max-width:340px}.plot-tag-editor-title{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:7px}.plot-tag-editor-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}.plot-tag-editor .chapter-tag-chip{font-size:11px}.plot-tag-editor-input{width:100%;border:0;background:transparent;outline:none;color:var(--text);font:12px var(--sans);padding:5px 2px}.plot-tag-editor-input::placeholder{color:var(--text3)}.plot-tag-editor-help{font-size:10px;color:var(--text3);margin-top:4px}
+.plot-meta{font-size:10px;color:var(--muted);margin-left:4px;white-space:nowrap;padding-top:5px}.plot-search-result-list{display:flex;flex-direction:column;gap:3px;max-width:900px;margin:0 auto}.plot-search-result{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border:1px solid transparent;border-radius:6px;background:transparent}.plot-search-result:hover{background:var(--bg2)}.plot-search-path{font-size:10px;color:var(--muted);margin:2px 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plot-search-body{flex:1;min-width:0}.plot-search-text{line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}.plot-dialog{position:fixed;z-index:650;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:10px;min-width:250px;max-width:360px}.plot-dialog h4{margin:0 0 8px;font-size:12px}.plot-dialog input{width:100%;box-sizing:border-box;background:var(--input);border:1px solid var(--border2);border-radius:5px;padding:6px;color:var(--text);margin-bottom:7px}.plot-dialog-actions{display:flex;justify-content:flex-end;gap:5px}.plot-dialog button{border:1px solid var(--border2);background:var(--bg);color:var(--text);border-radius:5px;padding:5px 8px;cursor:pointer}.plot-dialog button.primary{background:var(--thought-accent);color:white;border-color:var(--thought-accent)}
+.plot-node.dragging,.plot-search-result.dragging{opacity:.45}.plot-drop-child{outline:2px dashed var(--thought-accent);outline-offset:2px}.plot-drop-before{box-shadow:0 -2px 0 var(--thought-accent)}.plot-drop-after{box-shadow:0 2px 0 var(--thought-accent)}
+@media(max-width:800px){.plot-search{width:150px}.plot-toolbar-btn span{display:none}.plot-toolbar{padding:0 8px}.plot-crumb{display:none}.plot-root-list{min-width:0}.plot-branch{margin-left:16px;padding-left:14px}.plot-branch>.plot-node-row:before{left:-15px;width:14px}.plot-filter-input{max-width:140px}}
 </style>
 </head>
 <body>
@@ -545,6 +576,8 @@
       <button class="side-btn" id="backup-status-btn" onclick="handleBackupClick()" title="Local backup status">
         <span class="icon-badge-wrap"><i class="ti ti-device-floppy" id="backup-status-icon"></i><span class="save-dot" id="save-status-dot" title="Unsaved changes"></span></span><span class="side-label hide-collapsed" id="backup-status-label">Checking backup…</span>
       </button>
+      
+      <button class="side-btn" onclick="openPlotWorkspace()"><i class="ti ti-bulb"></i><span class="side-label hide-collapsed">Plot Workspace</span></button>
       <button class="side-btn" id="export-menu-btn" onclick="toggleExportMenu(event)"><i class="ti ti-package-export"></i><span class="side-label hide-collapsed">Export…</span></button>
       <button class="side-btn" onclick="importJson()"><i class="ti ti-upload"></i><span class="side-label hide-collapsed">Import .json</span></button>
       <input type="file" id="import-input" accept=".json" style="display:none" onchange="handleImport(event)">
@@ -622,6 +655,27 @@
   </main>
 </div>
 
+
+<div id="plot-workspace" aria-hidden="true">
+  <div id="plot-toolbar">
+    <strong id="plot-title">Plot Workspace</strong>
+    <span id="plot-crumb" class="plot-crumb">Story</span>
+    <input id="plot-search" class="plot-search" placeholder="Search ideas…" oninput="renderPlotWorkspace()">
+    <select id="plot-sort" class="plot-filter-input" title="Sort the current view" onchange="renderPlotWorkspace()">
+      <option value="story">Story order</option>
+      <option value="az">A–Z</option>
+    </select>
+    <button class="plot-toolbar-btn" onclick="togglePlotFilters()"><i class="ti ti-adjustments-horizontal"></i> <span>Filter</span></button>
+    <button class="plot-toolbar-btn" onclick="plotAdd(null,null)"><i class="ti ti-plus"></i> <span>New idea</span></button>
+    <button class="plot-toolbar-btn" onclick="closePlotWorkspace()" title="Close Plot Workspace"><i class="ti ti-x"></i></button>
+  </div>
+  <div id="plot-filterbar">
+    <input id="plot-tag-filter" class="plot-filter-input" placeholder="Filter by tag…" oninput="renderPlotWorkspace()">
+    <select id="plot-view-filter" class="plot-filter-input" onchange="renderPlotWorkspace()"><option value="all">All ideas</option><option value="tagged">Tagged only</option><option value="linked">Linked only</option></select>
+    <button class="plot-toolbar-btn" onclick="clearPlotFilters()">Clear</button>
+  </div>
+  <div id="plot-canvas"></div>
+</div>
 <!-- Type picker -->
 <div id="type-picker">
   <button class="type-opt" onclick="changeType('prose')"><span class="type-dot" style="background:var(--prose-accent)"></span>Prose</button>
@@ -772,7 +826,7 @@ let dragId=null, dragOverIndex=null;
 let chapDragId=null, chapDragOverIndex=null, chapDragCollId=null;
 let settings={fontSize:17,width:'medium',lineHeight:'normal',eyes:true,eyeOrientation:'vertical'};
 let pendingImageBlockId=null; // which block is waiting for file input
-
+let plotIdeas=[],activePlotId=null,plotFocusId=null,plotCollapsed=new Set(),plotDragId=null,plotDragMode=null;
 // ── Undo / redo ──
 // Whole-state snapshots, kept in memory only (never persisted to localStorage
 // or exported files, so they can never bloat saved/exported file size).
@@ -794,6 +848,7 @@ function save(){
   localStorage.setItem('nw-active-ch',activeChapterId);
   localStorage.setItem('nw-active-coll',activeCollId);
   localStorage.setItem('nw-name',document.getElementById('project-name').value);
+  localStorage.setItem('nw-plot-ideas',JSON.stringify(plotIdeas));
   mirrorToLocalFile();
   markSaved();
 }
@@ -939,7 +994,7 @@ async function reconnectLocalBackup(){
 }
 
 function disconnectLocalBackup(){
-  confirm('Stop mirroring writes to the local backup file? Your work stays saved in this browser either way.','Disconnect',async()=>{
+  appConfirm('Stop mirroring writes to the local backup file? Your work stays saved in this browser either way.','Disconnect',async()=>{
     localBackupHandle=null;
     localBackupStatus='disconnected';
     try{await idbDel('project-file');}catch(e){}
@@ -954,7 +1009,7 @@ async function mirrorToLocalFile(){
   localBackupWriting=true;
   try{
     const name=document.getElementById('project-name').value||'story';
-    const data=JSON.stringify({name,collections},null,2);
+    const data=JSON.stringify({name,collections,plotIdeas},null,2);
     const writable=await localBackupHandle.createWritable();
     await writable.write(data);
     await writable.close();
@@ -1061,20 +1116,29 @@ function markBackupExported(){
 function snapshotState(){
   return{
     collections:JSON.parse(JSON.stringify(collections)),
-    activeChapterId,activeCollId,
+    plotIdeas:JSON.parse(JSON.stringify(plotIdeas)),
+    activeChapterId,activeCollId,activePlotId,plotFocusId,
     projectName:document.getElementById('project-name').value
   };
 }
 function restoreSnapshot(snap){
   applyingUndo=true;
-  collections=JSON.parse(JSON.stringify(snap.collections));
+  collections=JSON.parse(JSON.stringify(snap.collections||[]));
+  plotIdeas=JSON.parse(JSON.stringify(snap.plotIdeas||[]));
   normalizeProjectData();
+  normalizePlotData();
   activeChapterId=snap.activeChapterId;
   activeCollId=snap.activeCollId;
+  activePlotId=snap.activePlotId??null;
+  plotFocusId=snap.plotFocusId??null;
   if(!allChapters().some(ch=>ch.id===activeChapterId))activeChapterId=allChapters()[0]?.id??null;
   if(!collections.some(c=>c.id===activeCollId))activeCollId=findChapterCollection(activeChapterId)?.id??collections[0]?.id??null;
+  if(activePlotId&&!plotIdea(activePlotId))activePlotId=null;
+  if(plotFocusId&&!plotIdea(plotFocusId))plotFocusId=null;
   document.getElementById('project-name').value=snap.projectName||'';
   renderSidebar();render();updateChapTitle();loadNotesIntoUI(true);
+  if(document.getElementById('plot-workspace')?.classList.contains('open')){closePlotDialog();renderPlotWorkspace();}
+  clearTimeout(saveTimer);
   save();
   applyingUndo=false;
 }
@@ -1123,9 +1187,11 @@ function performRedo(){
 // Wiki-links resolve against chapters in every collection. Collections remain the
 // only grouping model; there is no separate Codex collection or migration layer.
 function resolveLinkTarget(name){
-  const n=(name||'').trim().toLowerCase();
+  const n=(name||'').trim();
   if(!n)return null;
-  return allChapters().find(ch=>ch.name.toLowerCase()===n||(ch.aliases||[]).some(a=>a.toLowerCase()===n));
+  const plot=plotIdeas.find(p=>p.id===n||p.id.toLowerCase()===n.toLowerCase());
+  if(plot)return{...plot,_plot:true};
+  return allChapters().find(ch=>ch.name.toLowerCase()===n.toLowerCase()||(ch.aliases||[]).some(a=>a.toLowerCase()===n.toLowerCase()));
 }
 
 // ── Init ──
@@ -1155,6 +1221,249 @@ function normalizeProjectData(){
   });
 }
 
+
+function makePlotId(){
+  const used=new Set(plotIdeas.map(p=>String(p&&p.id||'')));
+  // Reuse the lowest available Plot Idea slot so deleted IDs become available again.
+  // IDs are allocated in base-36: pi_1, pi_2 … pi_9, pi_a, pi_b …
+  let n=1;
+  while(used.has('pi_'+n.toString(36)))n++;
+  const id='pi_'+n.toString(36);
+  nextPlotId=Math.max(nextPlotId||1,n+1);
+  return id;
+}
+function normalizePlotData(){
+  if(!Array.isArray(plotIdeas))plotIdeas=[];
+  const oldToNew=new Map(),used=new Set();
+  // Convert legacy numeric IDs to short, language-safe Plot Idea IDs.
+  plotIdeas.forEach((p,i)=>{
+    if(!p||typeof p!=='object')return;
+    const old=p.id;
+    let id=typeof old==='string'&&/^pi_[a-z0-9]+$/i.test(old)?old:'pi_'+(i+1).toString(36);
+    while(used.has(id))id='pi_'+(used.size+1).toString(36);
+    used.add(id);
+    if(old!==id)oldToNew.set(String(old),id);
+    p.id=id;
+  });
+  plotIdeas=plotIdeas.filter(p=>p&&typeof p==='object');
+  const valid=new Set(plotIdeas.map(p=>p.id));
+  plotIdeas.forEach(p=>{
+    const oldParent=p.parentId;
+    const parentKey=oldParent==null?null:String(oldParent);
+    p.parentId=parentKey==null?null:(oldToNew.get(parentKey)||parentKey);
+    if(p.parentId===p.id||!valid.has(p.parentId))p.parentId=null;
+    p.children=(Array.isArray(p.children)?p.children:[]).map(x=>oldToNew.get(String(x))||x).filter(x=>valid.has(x)&&x!==p.id);
+    p.children=[...new Set(p.children)];
+    p.tags=Array.isArray(p.tags)?p.tags.filter(x=>typeof x==='string'):[];
+    p.links=Array.isArray(p.links)?p.links.filter(x=>typeof x==='string'):[];
+    if(typeof p.text!=='string')p.text='';
+    // Keep links as the contents of [[...]]; Plot Ideas use their short ID.
+    p.links=[...new Set(p.links.map(x=>oldToNew.get(String(x))||String(x).trim()).filter(Boolean))];
+  });
+  // Parent/child is authoritative; preserve existing sibling order.
+  plotIdeas.forEach(p=>{
+    if(p.parentId!=null){const par=plotIdea(p.parentId);if(par&&!par.children.includes(p.id))par.children.push(p.id);}
+  });
+  plotIdeas.forEach(p=>p.children=p.children.filter(id=>plotIdea(id)?.parentId===p.id));
+  nextPlotId=Math.max(1,...plotIdeas.map(p=>{const m=/^pi_([a-z0-9]+)$/i.exec(p.id);return m?parseInt(m[1],36)+1:1;}));
+}
+function plotIdea(id){return plotIdeas.find(p=>p.id===id)||null;}
+function plotRoots(){return plotIdeas.filter(p=>p.parentId==null);}
+function plotDescendant(id,target){let cur=plotIdea(target),seen=new Set();while(cur&&cur.parentId!=null&&!seen.has(cur.id)){if(cur.parentId===id)return true;seen.add(cur.id);cur=plotIdea(cur.parentId);}return false;}
+function plotAncestors(id){const out=[];let p=plotIdea(id),seen=new Set();while(p&&!seen.has(p.id)){out.unshift(p.id);seen.add(p.id);p=plotIdea(p.parentId);}return out;}
+function plotPathText(id){return plotAncestors(id).map(x=>plotIdea(x)?.text.trim()||'Untitled idea').join(' → ');}
+function plotQueryState(){return{q:(document.getElementById('plot-search')?.value||'').trim().toLowerCase(),tag:(document.getElementById('plot-tag-filter')?.value||'').trim().toLowerCase(),mode:document.getElementById('plot-view-filter')?.value||'all'};}
+function plotMatches(){
+  const {q,tag,mode}=plotQueryState();
+  return plotIdeas.filter(p=>{
+    const text=(p.text||'').toLowerCase(),tags=(p.tags||[]).map(x=>x.toLowerCase()),links=(p.links||[]).map(x=>x.toLowerCase());
+    const qm=!q||text.includes(q)||tags.some(x=>x.includes(q))||links.some(x=>x.includes(q));
+    const tm=!tag||tags.some(x=>x.includes(tag));
+    const mm=mode==='all'||(mode==='tagged'&&tags.length>0)||(mode==='linked'&&links.length>0);
+    return qm&&tm&&mm;
+  });
+}
+function plotIsFiltered(){const s=plotQueryState();return !!(s.q||s.tag||s.mode!=='all');}
+function plotAdd(parentId=null,afterId=null){
+  normalizePlotData();
+  pushUndoSnapshot();
+  const id=makePlotId(),p={id,text:'',parentId:typeof parentId==='string'?parentId:null,children:[],tags:[],links:[]};
+  if(p.parentId!=null){const par=plotIdea(p.parentId);if(!par)p.parentId=null;}
+  plotIdeas.push(p);
+  if(p.parentId!=null){const par=plotIdea(p.parentId);const at=afterId!=null?par.children.indexOf(afterId):-1;if(at>=0)par.children.splice(at+1,0,id);else par.children.push(id);}
+  activePlotId=id;plotFocusId=p.parentId??plotFocusId;clearPlotFilters();scheduleSave();renderPlotWorkspace();
+  requestAnimationFrame(()=>{const el=document.querySelector('.plot-node-editor[data-plot-id="'+id+'"]');if(el){el.focus();setCaretOffset(el,el.textContent.length);}});
+  return id;
+}
+function plotUpdateText(id,v){const p=plotIdea(id);if(!p)return;p.text=v;p.links=[...v.matchAll(/\[\[([^\]]+)\]\]/g)].map(m=>(m[1].split('|')[0]||'').trim()).filter(Boolean);scheduleSave();}
+function plotDelete(id){
+  const p=plotIdea(id);
+  if(!p)return false;
+  pushUndoSnapshot();
+  const parentId=p.parentId;
+  const gone=new Set([id]),queue=[id];
+  while(queue.length){
+    const cur=queue.shift();
+    plotIdeas.forEach(x=>{
+      if(x.parentId===cur&&!gone.has(x.id)){gone.add(x.id);queue.push(x.id);}
+    });
+  }
+  if(parentId!=null){
+    const par=plotIdea(parentId);
+    if(par)par.children=par.children.filter(x=>!gone.has(x));
+  }
+  plotIdeas=plotIdeas.filter(x=>!gone.has(x?.id));
+  gone.forEach(x=>plotCollapsed.delete(x));
+  if(gone.has(activePlotId))activePlotId=parentId!=null?plotIdea(parentId)?.id??null:null;
+  if(gone.has(plotFocusId))plotFocusId=parentId!=null?plotIdea(parentId)?.id??null:null;
+  normalizePlotData();
+  renderPlotWorkspace();
+  save();
+  return true;
+}
+function plotMove(id,parentId,positionIndex){
+  const p=plotIdea(id);if(!p||parentId===id||plotDescendant(id,parentId))return;
+  pushUndoSnapshot();
+  const oldParent=p.parentId!=null?plotIdea(p.parentId):null;
+  if(oldParent)oldParent.children=oldParent.children.filter(x=>x!==id);
+  p.parentId=parentId==null?null:parentId;
+  if(parentId!=null){const par=plotIdea(parentId);if(!par){p.parentId=null;}else{par.children=par.children.filter(x=>x!==id);par.children.splice(Math.max(0,Math.min(positionIndex??par.children.length,par.children.length)),0,id);}}
+  if(parentId==null){const roots=plotRoots().filter(x=>x.id!==id);roots.splice(Math.max(0,Math.min(positionIndex??roots.length,roots.length)),0,p);const rootIds=new Set(roots.map(x=>x.id));plotIdeas=[...roots,...plotIdeas.filter(x=>!rootIds.has(x.id))];}
+  normalizePlotData();scheduleSave();renderPlotWorkspace();
+}
+function plotDeleteWithConfirm(id,anchor){
+  const p=plotIdea(id);if(!p)return;
+  const label=(p.text||'Untitled idea').trim()||'Untitled idea';
+  appConfirm('Delete '+JSON.stringify(label)+' and all of its children?','Delete',()=>plotDelete(id),anchor);
+}
+function plotTagDialog(id,anchor){
+  const p=plotIdea(id);if(!p)return;
+  closePlotDialog();
+  const d=document.createElement('div');d.className='plot-tag-editor';d.id='plot-tag-editor';d.dataset.plotId=String(id);
+  const chips=document.createElement('div');chips.className='plot-tag-editor-chips';
+  (p.tags||[]).forEach(tag=>{
+    const chip=document.createElement('span');chip.className='chapter-tag-chip';
+    const text=document.createElement('span');text.textContent=tag;
+    const x=document.createElement('button');x.type='button';x.title='Remove tag';x.textContent='×';
+    x.onclick=()=>{pushUndoSnapshot();p.tags=(p.tags||[]).filter(t=>t!==tag);renderPlotTagEditor(id);scheduleSave();renderPlotWorkspace();};
+    chip.append(text,x);chips.appendChild(chip);
+  });
+  d.innerHTML='<div class="plot-tag-editor-title">Tags</div>';d.appendChild(chips);
+  const input=document.createElement('input');input.className='plot-tag-editor-input';input.placeholder='Add tag…';input.setAttribute('aria-label','Add tag');
+  input.onkeydown=e=>{
+    if(e.key==='Enter'||e.key===','){e.preventDefault();addPlotTag(id,input.value);input.value='';return;}
+    if(e.key==='Backspace'&&!input.value&&(p.tags||[]).length){pushUndoSnapshot();p.tags.pop();renderPlotTagEditor(id);scheduleSave();renderPlotWorkspace();}
+    if(e.key==='Escape')closePlotDialog();
+  };
+  d.appendChild(input);const help=document.createElement('div');help.className='plot-tag-editor-help';help.textContent='Press Enter to add a tag.';d.appendChild(help);
+  document.body.appendChild(d);positionPlotPopover(d,anchor);input.focus();
+}
+function renderPlotTagEditor(id){
+  const d=document.getElementById('plot-tag-editor');if(!d)return;
+  const p=plotIdea(id);if(!p){closePlotDialog();return;}
+  const anchor=d.__anchor;
+  d.remove();
+  plotTagDialog(id,anchor);
+}
+document.addEventListener('pointerdown',e=>{
+  const d=document.getElementById('plot-tag-editor');
+  if(d && !d.contains(e.target) && !e.target.closest('.plot-icon-btn[title="Edit tags"]')) d.remove();
+});
+function addPlotTag(id,raw){
+  const p=plotIdea(id);if(!p)return;const tag=(raw||'').trim().replace(/,+$/,'').trim();if(!tag)return;
+  if(!Array.isArray(p.tags))p.tags=[];
+  if(p.tags.some(t=>t.toLowerCase()===tag.toLowerCase()))return;
+  pushUndoSnapshot();
+  p.tags.push(tag);
+  scheduleSave();renderPlotWorkspace();
+}
+function positionPlotPopover(d,anchor){
+  d.__anchor=anchor||null;
+  const r=anchor?.getBoundingClientRect();
+  if(!r){d.style.left='50%';d.style.top='50%';d.style.transform='translate(-50%,-50%)';return;}
+  d.style.transform='';
+  const pw=Math.min(340,d.offsetWidth||340),ph=d.offsetHeight||160;
+  let left=r.left,top=r.bottom+6;
+  if(left+pw>innerWidth-8)left=Math.max(8,innerWidth-pw-8);
+  if(top+ph>innerHeight-8)top=Math.max(8,r.top-ph-6);
+  d.style.left=left+'px';d.style.top=top+'px';
+}
+function positionPlotDialog(d){d.style.left=Math.max(10,(innerWidth-d.offsetWidth)/2)+'px';d.style.top=Math.max(60,(innerHeight-d.offsetHeight)/2)+'px';}
+function closePlotDialog(){
+  document.getElementById('plot-dialog')?.remove();
+  document.getElementById('plot-tag-editor')?.remove();
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderPlotEditor(p){
+  const ed=document.createElement('div');ed.className='plot-node-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write an idea…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot idea');
+  ed.textContent=p.text||'';
+  wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;},onKeydown:e=>{
+    if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotAdd(p.parentId,p.id);}
+    else if(e.key==='Tab'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotAdd(p.id,null);}
+  }});
+  return ed;
+}
+async function copyPlotIdeaRef(id){const ref='[['+id+']]';let copied=false;try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(ref);copied=true;}}catch(e){}if(!copied){try{const ta=document.createElement('textarea');ta.value=ref;ta.setAttribute('readonly','');ta.style.position='fixed';ta.style.opacity='0';ta.style.pointerEvents='none';document.body.appendChild(ta);ta.focus();ta.select();copied=document.execCommand('copy');ta.remove();}catch(e){copied=false;}}toast(copied?'Copied '+ref:'Reference: '+ref);}
+function renderPlotNode(p,visible){
+  if(visible&&!visible.has(p.id))return null;
+  const branch=document.createElement('div');branch.className='plot-branch';branch.dataset.id=p.id;
+  const row=document.createElement('div');row.className='plot-node-row';
+  const node=document.createElement('div');node.className='plot-node'+(activePlotId===p.id?' selected':'');node.draggable=true;
+  node.addEventListener('dragstart',e=>{plotDragId=p.id;node.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+  node.addEventListener('dragend',()=>{plotDragId=null;document.querySelectorAll('.plot-node,.plot-search-result').forEach(x=>x.classList.remove('dragging','plot-drop-child'));});
+  node.addEventListener('dragover',e=>{if(plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;e.preventDefault();node.classList.add('plot-drop-child');});
+  node.addEventListener('dragleave',()=>node.classList.remove('plot-drop-child'));
+  node.addEventListener('drop',e=>{e.preventDefault();node.classList.remove('plot-drop-child');if(plotDragId!=null&&plotDragId!==p.id&&!plotDescendant(plotDragId,p.id))plotMove(plotDragId,p.id,p.children.length);});
+  const gutter=document.createElement('div');gutter.className='plot-gutter';
+  if(p.children.length){const c=document.createElement('button');c.className='plot-icon-btn';c.title=plotCollapsed.has(p.id)?'Expand children':'Collapse children';c.innerHTML='<i class="ti '+(plotCollapsed.has(p.id)?'ti-chevron-right':'ti-chevron-down')+'"></i>';c.onclick=e=>{e.stopPropagation();plotCollapsed.has(p.id)?plotCollapsed.delete(p.id):plotCollapsed.add(p.id);renderPlotWorkspace();};gutter.appendChild(c);}
+  const ref=document.createElement('button');ref.className='plot-ref-id';ref.type='button';ref.title='Copy reference [['+p.id+']]';ref.textContent=p.id;ref.onclick=async e=>{e.stopPropagation();await copyPlotIdeaRef(p.id);};gutter.appendChild(ref);
+  const del=document.createElement('button');del.className='plot-icon-btn';del.type='button';del.title='Delete idea and children';del.innerHTML='<i class="ti ti-trash"></i>';del.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(p.id,del);};gutter.appendChild(del);
+  const next=document.createElement('button');next.className='plot-icon-btn';next.title='Add next idea (Enter)';next.innerHTML='<i class="ti ti-plus"></i>';next.onclick=e=>{e.stopPropagation();plotAdd(p.parentId,p.id);};gutter.appendChild(next);
+  const tags=document.createElement('button');tags.className='plot-icon-btn';tags.title='Edit tags';tags.innerHTML='<i class="ti ti-tag"></i>';tags.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,tags);};gutter.appendChild(tags);
+  node.append(gutter,renderPlotEditor(p));
+  if(p.children.length){const meta=document.createElement('span');meta.className='plot-meta';meta.textContent=p.children.length+' child'+(p.children.length===1?'':'ren');node.appendChild(meta);}
+  row.appendChild(node);branch.appendChild(row);
+  if(p.tags.length){const ts=document.createElement('div');ts.className='plot-tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});branch.appendChild(ts);}
+  if(!plotCollapsed.has(p.id)){const childWrap=document.createElement('div');childWrap.className='plot-children';p.children.forEach(cid=>{const ch=plotIdea(cid);if(!ch)return;const n=renderPlotNode(ch,visible);if(n)childWrap.appendChild(n);});if(childWrap.children.length)branch.appendChild(childWrap);}
+  row.addEventListener('click',e=>{if(e.target.closest('button,.plot-node-editor'))return;activePlotId=p.id;plotFocusId=p.id;renderPlotWorkspace();});
+  return branch;
+}
+function plotSearchResults(){
+  const results=plotMatches();
+  const sort=document.getElementById('plot-sort')?.value||'story';
+  if(sort==='az')results.sort((a,b)=>(a.text||'').localeCompare(b.text||'',undefined,{sensitivity:'base'}));
+  return results;
+}
+function renderPlotSearchResults(canvas){
+  const results=plotSearchResults();const list=document.createElement('div');list.className='plot-search-result-list';
+  if(!results.length){list.innerHTML='<div class="plot-empty"><h3>No matching ideas</h3><p>Try a different search or clear the filter.</p></div>';canvas.appendChild(list);return;}
+  results.forEach(p=>{
+    const row=document.createElement('div');row.className='plot-search-result';row.draggable=true;row.dataset.id=p.id;
+    row.addEventListener('dragstart',e=>{plotDragId=p.id;row.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+    row.addEventListener('dragend',()=>{plotDragId=null;row.classList.remove('dragging');});
+    row.addEventListener('dragover',e=>{if(plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;e.preventDefault();row.classList.add('plot-drop-child');});
+    row.addEventListener('dragleave',()=>row.classList.remove('plot-drop-child'));
+    row.addEventListener('drop',e=>{e.preventDefault();row.classList.remove('plot-drop-child');if(plotDragId!=null&&plotDragId!==p.id&&!plotDescendant(plotDragId,p.id))plotMove(plotDragId,p.id,p.children.length);});
+    const body=document.createElement('div');body.className='plot-search-body';const path=document.createElement('div');path.className='plot-search-path';path.textContent=plotPathText(p.id);const text=document.createElement('div');text.className='plot-search-text';text.textContent=p.text||'Untitled idea';body.append(path,text);row.appendChild(body);row.onclick=()=>{plotFocusId=p.id;activePlotId=p.id;renderPlotWorkspace();requestAnimationFrame(()=>document.querySelector('.plot-node-editor[data-plot-id="'+p.id+'"]')?.focus());};list.appendChild(row);
+  });
+  canvas.appendChild(list);
+}
+function plotBreadcrumb(){const el=document.getElementById('plot-crumb');const path=plotFocusId?plotPathText(plotFocusId):'';el.textContent=path?'Story → '+path:'Story';}
+function renderPlotWorkspace(){
+  normalizePlotData();
+  plotBreadcrumb();
+  const canvas=document.getElementById('plot-canvas');
+  if(!canvas)return;
+  canvas.innerHTML='';
+  if(!plotIdeas.length){canvas.innerHTML='<div class="plot-empty"><h3>Start your story model</h3><p>Write an idea, press Enter for the next sibling, or Tab to make a child. Drag ideas to change their structure.</p><button class="plot-toolbar-btn" onclick="plotAdd(null,null)"><i class="ti ti-plus"></i> New idea</button></div>';return;}
+  if(plotIsFiltered()){renderPlotSearchResults(canvas);return;}
+  const wrap=document.createElement('div');wrap.className='plot-root-list';plotRoots().forEach(p=>{const n=renderPlotNode(p,null);if(n)wrap.appendChild(n);});canvas.appendChild(wrap);
+}
+function openPlotWorkspace(){normalizePlotData();if(activePlotId&&!plotIdea(activePlotId))activePlotId=null;if(plotFocusId&&!plotIdea(plotFocusId))plotFocusId=null;document.getElementById('plot-workspace').classList.add('open');document.getElementById('plot-workspace').setAttribute('aria-hidden','false');renderPlotWorkspace();}
+function closePlotWorkspace(){closePlotDialog();document.getElementById('plot-workspace').classList.remove('open');document.getElementById('plot-workspace').setAttribute('aria-hidden','true');}
+function togglePlotFilters(){document.getElementById('plot-filterbar').classList.toggle('open');}
+function clearPlotFilters(){document.getElementById('plot-search').value='';document.getElementById('plot-tag-filter').value='';document.getElementById('plot-view-filter').value='all';document.getElementById('plot-sort').value='story';renderPlotWorkspace();}
+
 function init(){
   loadSettings();
   const saved=localStorage.getItem('nw-collections');
@@ -1172,6 +1481,9 @@ function init(){
       if(!allChapters().length)loadSample();
     }catch(e){loadSample();}
   }else{loadSample();}
+  const savedPlots=localStorage.getItem('nw-plot-ideas');
+  if(savedPlots){try{plotIdeas=JSON.parse(savedPlots)||[];}catch(e){plotIdeas=[];}}
+  normalizePlotData();
   normalizeProjectData();
   const savedName=localStorage.getItem('nw-name');
   if(savedName)document.getElementById('project-name').value=savedName;
@@ -1335,7 +1647,7 @@ function addCollection(){
 function deleteCollection(id,anchorEl){
   const coll=collections.find(c=>c.id===id);
   if(collections.length===1){toast("Can't delete the only collection");return;}
-  confirm('Delete "'+(coll?.name||'collection')+'" and all its chapters?','Delete',()=>{
+  appConfirm('Delete "'+(coll?.name||'collection')+'" and all its chapters?','Delete',()=>{
     collections=collections.filter(c=>c.id!==id);
     if(!allChapters().find(ch=>ch.id===activeChapterId)){
       const first=allChapters()[0];
@@ -1358,7 +1670,7 @@ function nextCopyName(base,existingNamesLower){
 }
 function duplicateCollection(id,anchorEl){
   const coll=collections.find(c=>c.id===id);if(!coll)return;
-  confirm('Duplicate "'+coll.name+'" and all its chapters?','Duplicate',()=>{
+  appConfirm('Duplicate "'+coll.name+'" and all its chapters?','Duplicate',()=>{
     const clone=JSON.parse(JSON.stringify(coll));
     clone.id=nextCollId++;
     const existingCollNames=new Set(collections.map(c=>c.name.toLowerCase()));
@@ -1411,7 +1723,7 @@ function deleteChapter(collId,chapId,anchorEl){
   const coll=collections.find(c=>c.id===collId);if(!coll)return;
   if(allChapters().length===1){toast("Can't delete the only chapter");return;}
   const ch=coll.chapters.find(c=>c.id===chapId);
-  confirm('Delete "'+(ch?.name||'chapter')+'"?','Delete',()=>{
+  appConfirm('Delete "'+(ch?.name||'chapter')+'"?','Delete',()=>{
     coll.chapters=coll.chapters.filter(ch=>ch.id!==chapId);
     if(activeChapterId===chapId){
       const next=allChapters()[0];
@@ -1624,6 +1936,9 @@ function wireMdEditable(el,getSet,opts){
   // so drag-selection has finished before considering a caret reveal.
   el.addEventListener('mouseup',()=>setTimeout(revealAtCaret,0));
   el.addEventListener('blur',()=>{
+    // Undo/redo replaces editor DOM nodes while the old field may still own focus.
+    // Do not let that stale field write its pre-restore contents back into the model.
+    if(applyingUndo){hideWikilinkAC();return;}
     const raw=el.textContent;
     getSet.set(raw);
     // Caret is leaving the field entirely, so nothing should stay "revealed" —
@@ -1635,7 +1950,7 @@ function wireMdEditable(el,getSet,opts){
   });
   el.addEventListener('click',e=>{
     const link=e.target.closest('.md-link');
-    if(link&&(e.metaKey||e.ctrlKey)){e.preventDefault();openOrCreateChapterEntry(link.dataset.target);}
+    if(link&&(e.metaKey||e.ctrlKey)){e.preventDefault();const target=link.dataset.target;const pp=plotIdeas.find(p=>(p.text||'').trim()===target);if(pp){plotFocusId=pp.id;activePlotId=pp.id;openPlotWorkspace();}else openOrCreateChapterEntry(target);}
   });
   el.addEventListener('keydown',e=>{
     if(wikilinkAcOpen()){
@@ -1675,7 +1990,10 @@ function handleWikilinkAutocomplete(el,raw,caretOffset){
   if(!m){hideWikilinkAC();return;}
   acQuery=m[1];acStart=m.index;acAnchorEl=el;
   const q=acQuery.toLowerCase();
-  acItems=allChapters().filter(c=>c.name.toLowerCase().includes(q)||chapterAliases(c).some(a=>a.toLowerCase().includes(q))||chapterTags(c).some(t=>t.toLowerCase().includes(q))).slice(0,8);
+  const chapters=allChapters().filter(c=>c.name.toLowerCase().includes(q)||chapterAliases(c).some(a=>a.toLowerCase().includes(q))||chapterTags(c).some(t=>t.toLowerCase().includes(q))).map(c=>({...c,_plot:false}));
+  const ideas=plotIdeas.filter(p=>(p.text||'').toLowerCase().includes(q)||p.id.toLowerCase().includes(q)||(p.tags||[]).some(t=>t.toLowerCase().includes(q))).map(p=>({id:p.id,name:(p.text||'').trim()||'Untitled idea',tags:p.tags||[],aliases:[],_plot:true}));
+  // Chapters remain the primary suggestions; Plot Ideas are available after them.
+  acItems=[...chapters,...ideas].slice(0,12);
   acSel=0;
   showWikilinkAC();
 }
@@ -1687,9 +2005,12 @@ function showWikilinkAC(){
   acItems.forEach((c,idx)=>{
     const row=document.createElement('div');
     row.className='wac-item'+(idx===acSel?' sel':'');
-    const dot=document.createElement('span');dot.className='wac-dot';dot.style.background=CHAPTER_TYPE_COLORS[chapterType(c)]||'#999';
-    const nm=document.createElement('span');nm.textContent=c.name;
+    const dot=document.createElement('span');dot.className='wac-dot';dot.style.background=c._plot?'var(--thought-accent)':(CHAPTER_TYPE_COLORS[chapterType(c)]||'#999');
+    const nm=document.createElement('span');nm.className='wac-name';nm.textContent=c.name||'Untitled';nm.title=c.name||'Untitled';
     row.append(dot,nm);
+    if(c._plot){
+      const id=document.createElement('span');id.className='wac-id';id.textContent=c.id;id.title=c.id;row.appendChild(id);
+    }
     row.onmousedown=e=>{e.preventDefault();acSel=idx;commitWikilinkAcSel(acAnchorEl,acAnchorEl.__mdGetSet);};
     pop.appendChild(row);
   });
@@ -1718,20 +2039,14 @@ function moveWikilinkAcSel(dir){
   showWikilinkAC();
 }
 function commitWikilinkAcSel(el,getSet){
-  if(!el||!getSet)return;
-  let name;
-  if(acSel<acItems.length)name=acItems[acSel].name;
-  else{const coll=activeCollection()||collections[0];if(!coll)return;const entry={id:nextChapterId++,name:acQuery||'Untitled',type:'chapter',aliases:[],tags:[],blocks:[],notes:''};coll.chapters.push(entry);coll.open=true;renderSidebar();scheduleSave();name=entry.name;}
-  const raw=el.textContent;
-  const caret=getCaretOffset(el);
-  const before=raw.slice(0,acStart);
-  const after=raw.slice(caret==null?raw.length:caret);
-  const newRaw=before+'[['+name+']]'+after;
-  getSet.set(newRaw);
-  renderMarkdownInto(el,newRaw);
-  setCaretOffset(el,before.length+2+name.length+2);
-  hideWikilinkAC();
-  el.focus();
+  const target=acItems[acSel];if(!target||acStart==null)return;
+  const raw=el.textContent;const off=getCaretOffset(el)??raw.length;const before=raw.slice(0,off);const m=/\[\[([^\[\]]*)$/.exec(before);if(!m)return;
+  const label=target.name||'';
+  // Plot Idea links use the stable Plot Idea ID as their default visible text.
+  // Do not inject an alias when a suggestion is accepted via Enter/Tab.
+  const replacement=target._plot?'[['+target.id+']]' :'[['+label+']]';
+  const newRaw=raw.slice(0,m.index)+replacement+raw.slice(off);
+  getSet.set(newRaw);renderMarkdownInto(el,newRaw,m.index+replacement.length);setCaretOffset(el,m.index+replacement.length);hideWikilinkAC();
 }
 function openOrCreateChapterEntry(name){
   let entry=resolveLinkTarget(name);
@@ -2071,7 +2386,7 @@ function deleteBlock(id){
   const ch=activeChapter();if(!ch)return;
   if(ch.blocks.length<=1){toast('Need at least one block');return;}
   const btn=document.querySelector(`.block-wrap[data-id="${id}"] .gutter-btn[title="Delete block"]`);
-  confirm('Delete this block?','Delete',()=>{
+  appConfirm('Delete this block?','Delete',()=>{
     pushUndoSnapshot();
     ch.blocks=ch.blocks.filter(b=>b.id!==id);
     render();save();
@@ -2478,7 +2793,7 @@ async function doExport(format){
   if(format==='json'){
     const name=document.getElementById('project-name').value||'story';
     if(exportScope==='all'){
-      download(filename+'.json',JSON.stringify({name,collections},null,2),'application/json');
+      download(filename+'.json',JSON.stringify({name,collections,plotIdeas},null,2),'application/json');
     } else if(exportScope==='collection'){
       const coll=activeCollection();
       download(filename+'.json',JSON.stringify({name:label,collection:coll},null,2),'application/json');
@@ -2510,7 +2825,7 @@ async function doExport(format){
       if(notesContent)zip.file('notes.txt',notesContent);
       if(exportScope==='all'){
         const name=document.getElementById('project-name').value||'story';
-        zip.file('story.json',JSON.stringify({name,collections},null,2));
+        zip.file('story.json',JSON.stringify({name,collections,plotIdeas},null,2));
       }
       const blob=await zip.generateAsync({type:'blob'});
       const a=document.createElement('a');
@@ -2544,6 +2859,8 @@ function handleImport(e){
       if(data.collections){
         // Full project — replace everything
         collections=data.collections;
+        plotIdeas=Array.isArray(data.plotIdeas)?data.plotIdeas:[];
+        normalizePlotData();
         if(data.name)document.getElementById('project-name').value=data.name;
                 nextCollId=Math.max(...collections.map(c=>c.id))+1;
         nextChapterId=Math.max(...allChapters().map(ch=>ch.id),0)+1;
@@ -2651,12 +2968,20 @@ function classifyParagraph(p){
 
 // ── Confirm popup ──
 let confirmCallback=null;
-function confirm(msg,label,onYes,anchorEl){
+function appConfirm(msg,label,onYes,anchorEl){
   const popup=document.getElementById('confirm-popup');
   document.getElementById('confirm-msg').textContent=msg;
   const yesBtn=document.getElementById('confirm-yes-btn');
+  yesBtn.type='button';
   yesBtn.textContent=label||'Delete';
   confirmCallback=onYes;
+  yesBtn.onclick=e=>{
+    e.preventDefault();
+    e.stopPropagation();
+    const cb=confirmCallback;
+    closeConfirm();
+    if(typeof cb==='function') cb();
+  };
   // Position near anchor
   if(anchorEl){
     const r=anchorEl.getBoundingClientRect();
@@ -2664,8 +2989,10 @@ function confirm(msg,label,onYes,anchorEl){
     let left=r.right+6;
     if(left+pw>window.innerWidth)left=r.left-pw-6;
     let top=r.top;
-    if(top+80>window.innerHeight)top=window.innerHeight-90;
-    popup.style.left=Math.max(4,left)+'px';
+    const ph=popup.offsetHeight||90;
+    if(top+ph>window.innerHeight-8)top=Math.max(8,window.innerHeight-ph-8);
+    popup.style.transform='';
+    popup.style.left=Math.max(4,Math.min(left,window.innerWidth-pw-4))+'px';
     popup.style.top=Math.max(4,top)+'px';
   } else {
     popup.style.left='50%';popup.style.top='50%';
@@ -2679,10 +3006,7 @@ function closeConfirm(){
   document.getElementById('confirm-popup').style.transform='';
   confirmCallback=null;
 }
-document.getElementById('confirm-yes-btn').addEventListener('click',()=>{
-  if(confirmCallback)confirmCallback();
-  closeConfirm();
-});
+// Confirm button action is bound directly in appConfirm().
 // Global undo/redo/save — captured ahead of any element's own keydown handler
 // (including contenteditable blocks) so it always wins over native
 // per-field undo, which is unreliable for scripted DOM edits like bold/italic.
