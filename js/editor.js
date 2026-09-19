@@ -84,6 +84,154 @@ function setCaretOffset(el,offset){
   range.collapse(true);
   const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
 }
+/** Client rect of the collapsed caret inside el, or null. Avoids DOM mutation. */
+function getCaretClientRect(el){
+  const sel=window.getSelection();
+  if(!sel.rangeCount||!sel.isCollapsed)return null;
+  const range=sel.getRangeAt(0);
+  if(!el.contains(range.startContainer))return null;
+  const rects=range.getClientRects();
+  if(rects.length)return rects[0];
+  // Collapsed at a boundary with no width: expand one character to get a line box.
+  try{
+    const r=range.cloneRange();
+    const node=range.startContainer;
+    if(node.nodeType===3){
+      const len=node.textContent.length;
+      if(range.startOffset<len){
+        r.setEnd(node,range.startOffset+1);
+        const rr=r.getClientRects();
+        if(rr.length)return rr[0];
+      }
+      if(range.startOffset>0){
+        r.setStart(node,range.startOffset-1);
+        r.setEnd(node,range.startOffset);
+        const rr=r.getClientRects();
+        if(rr.length)return rr[0];
+      }
+    }
+  }catch(e){}
+  return null;
+}
+/** True when the caret sits on the first visual line of el (or el is empty). */
+function isCaretOnFirstVisualLine(el){
+  const off=getCaretOffset(el);
+  if(off===0||off==null)return true;
+  const full=document.createRange();
+  full.selectNodeContents(el);
+  const lineRects=[...full.getClientRects()];
+  if(lineRects.length<=1)return true;
+  const caret=getCaretClientRect(el);
+  if(!caret)return off===0;
+  return Math.abs(caret.top-lineRects[0].top)<8;
+}
+/** True when the caret sits on the last visual line of el (or el is empty). */
+function isCaretOnLastVisualLine(el){
+  const raw=el.textContent||'';
+  const off=getCaretOffset(el);
+  if(off!=null&&off>=raw.length)return true;
+  const full=document.createRange();
+  full.selectNodeContents(el);
+  const lineRects=[...full.getClientRects()];
+  if(lineRects.length<=1)return true;
+  const caret=getCaretClientRect(el);
+  if(!caret)return off!=null&&off>=raw.length;
+  const last=lineRects[lineRects.length-1];
+  return Math.abs(caret.top-last.top)<8;
+}
+function isCaretAtStart(el){const off=getCaretOffset(el);return off===0;}
+function isCaretAtEnd(el){const off=getCaretOffset(el);return off!=null&&off>=(el.textContent||'').length;}
+/**
+ * Focus the main editable inside a chapter block. Handles virtualization by
+ * scrolling the target into the estimated window first when needed.
+ */
+function focusBlockEditable(blockId,caretAtStart){
+  const bs=blocks();
+  const idx=bs.findIndex(b=>b.id===blockId);
+  if(idx<0)return false;
+  const writingArea=document.getElementById('writing-area');
+  if(bs.length>VIRTUALIZE_THRESHOLD&&writingArea){
+    const topH=sumHeights(bs,0,idx);
+    writingArea.scrollTop=Math.max(0,topH-writingArea.clientHeight*0.35);
+    renderBlocksVirtualized();
+  }
+  let el=document.querySelector(`.block-wrap[data-id="${blockId}"] [contenteditable="true"]`);
+  if(!el){
+    const input=document.querySelector(`.block-wrap[data-id="${blockId}"] .group-name-edit`);
+    if(input){input.focus();if(typeof input.select==='function')input.select();return true;}
+    return false;
+  }
+  el.focus();
+  const len=(el.textContent||'').length;
+  setCaretOffset(el,caretAtStart?0:len);
+  focusedId=blockId;
+  if(viewMode==='focus'||settings.typewriter)refreshFocusClasses();
+  if(settings.typewriter)centerTypewriterCaret(el);
+  else el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  return true;
+}
+/** Move focus to the next/previous chapter block from the current editable. */
+function navigateAdjacentBlock(el,dir){
+  const wrap=el.closest('.block-wrap');
+  if(!wrap)return false;
+  const id=parseInt(wrap.dataset.id,10);
+  const bs=blocks();
+  const idx=bs.findIndex(b=>b.id===id);
+  if(idx<0)return false;
+  let target=idx+dir;
+  while(target>=0&&target<bs.length){
+    const b=bs[target];
+    // Image blocks without a caption field still get a focus attempt; skip
+    // pure non-editable shells only if focus fails.
+    if(focusBlockEditable(b.id,dir>0))return true;
+    target+=dir;
+  }
+  return false;
+}
+/** Move focus to the next/previous plot idea editor currently in the DOM. */
+function navigateAdjacentPlot(el,dir){
+  const eds=[...document.querySelectorAll('#plot-workspace [contenteditable="true"][data-plot-id],#plot-workspace .plot-node-editor[contenteditable="true"],#plot-workspace .plot-card-editor[contenteditable="true"],#plot-workspace .plot-beat-editor[contenteditable="true"],#plot-workspace .plot-lane-title[contenteditable="true"]')];
+  // Prefer explicit data-plot-id list when present.
+  const withId=[...document.querySelectorAll('#plot-workspace [data-plot-id]')].filter(n=>n.isContentEditable||n.getAttribute('contenteditable')==='true');
+  const list=withId.length?withId:eds;
+  const i=list.indexOf(el);
+  if(i<0)return false;
+  const next=list[i+dir];
+  if(!next)return false;
+  next.focus();
+  const len=(next.textContent||'').length;
+  setCaretOffset(next,dir>0?0:len);
+  const plotId=next.dataset.plotId||next.closest('[data-id]')?.dataset.id;
+  if(plotId)activePlotId=plotId;
+  next.scrollIntoView({behavior:'smooth',block:'nearest'});
+  return true;
+}
+/**
+ * Handle ArrowUp/Down/Left/Right at the edges of an editable so the user can
+ * move between blocks (chapter editor) or plot ideas without leaving the
+ * keyboard. Returns true when navigation was performed (and default prevented).
+ */
+function handleEdgeArrowNavigation(el,e){
+  if(e.shiftKey||e.altKey||e.ctrlKey||e.metaKey)return false;
+  const key=e.key;
+  if(key!=='ArrowDown'&&key!=='ArrowUp'&&key!=='ArrowLeft'&&key!=='ArrowRight')return false;
+  const sel=window.getSelection();
+  if(sel&&!sel.isCollapsed)return false;
+  if(wikilinkAcOpen())return false;
+  const goingDown=key==='ArrowDown'||key==='ArrowRight';
+  const goingUp=key==='ArrowUp'||key==='ArrowLeft';
+  if(goingDown){
+    const atEdge=key==='ArrowRight'?isCaretAtEnd(el):isCaretOnLastVisualLine(el);
+    if(!atEdge)return false;
+  }else if(goingUp){
+    const atEdge=key==='ArrowLeft'?isCaretAtStart(el):isCaretOnFirstVisualLine(el);
+    if(!atEdge)return false;
+  }else return false;
+  const inPlot=!!el.closest('#plot-workspace');
+  const moved=inPlot?navigateAdjacentPlot(el,goingDown?1:-1):navigateAdjacentBlock(el,goingDown?1:-1);
+  if(moved){e.preventDefault();e.stopPropagation();return true;}
+  return false;
+}
 function getSelectionOffsets(el){
   const sel=window.getSelection();
   if(!sel.rangeCount)return null;
@@ -164,6 +312,7 @@ function wireMdEditable(el,getSet,opts){
       if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();moveWikilinkAcSel(e.key==='ArrowDown'?1:-1);return;}
       if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();commitWikilinkAcSel(el,getSet);return;}
     }
+    if(handleEdgeArrowNavigation(el,e))return;
     if(opts.multiline&&e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){
       e.preventDefault();
       noteTextEdit();

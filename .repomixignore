@@ -66,3 +66,5 @@ repomix-output.*
 *.py
 codebase_map.json
 CODEBASE_MAP.md
+LICENSE.md
+README.md
