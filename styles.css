@@ -534,8 +534,6 @@
 .plot-beat-add{flex-shrink:0;align-self:stretch;width:76px;border:1px dashed var(--border2);background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px}
 .plot-beat-add:hover{border-color:var(--thought-accent);color:var(--text)}
 @media(max-width:800px){.plot-beat{width:160px}.plot-lane-head{flex-wrap:wrap}}
-
-/* Global search */
 #search-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:10vh 20px 20px;background:rgba(20,20,18,.28);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .14s ease}
 #search-overlay.open{opacity:1;pointer-events:auto}
 #search-dialog{width:min(680px,100%);max-height:min(72vh,720px);display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--border2);border-radius:12px;box-shadow:0 18px 55px rgba(0,0,0,.2);overflow:hidden;transform:translateY(-8px) scale(.985);transition:transform .14s ease}
@@ -561,16 +559,14 @@
   #search-overlay{padding:5vh 10px 10px}
   #search-dialog{max-height:82vh}
 }
-
-/* Typewriter mode */
 body.typewriter-mode #topbar{opacity:.82}
 body.typewriter-mode #writing-area{scroll-behavior:smooth}
 body.typewriter-mode .block-wrap{transition:opacity .18s ease,transform .18s ease}
-body.typewriter-mode .block-wrap:not(.block-focused){opacity:.72}
-body.typewriter-mode .block-wrap.block-focused{opacity:1}
-body.typewriter-mode .block-focused .block-content{box-shadow:0 0 0 1px var(--border2);border-radius:8px}
-
-/* Manuscript statistics */
+body.typewriter-mode .block-wrap:not(.block-focused):not(:focus-within){opacity:.72}
+body.typewriter-mode .block-wrap.block-focused,
+body.typewriter-mode .block-wrap:focus-within{opacity:1}
+body.typewriter-mode .block-focused .block-content,
+body.typewriter-mode .block-wrap:focus-within .block-content{box-shadow:0 0 0 1px var(--border2);border-radius:8px}
 .nw-modal{position:fixed;inset:0;background:rgba(0,0,0,.32);display:none;align-items:center;justify-content:center;padding:20px;z-index:120}
 .nw-modal.open{display:flex}
 .nw-modal-card{width:min(680px,calc(100vw - 32px));max-height:min(86vh,760px);overflow:auto;background:var(--bg);border:1px solid var(--border2);border-radius:14px;box-shadow:0 18px 60px rgba(0,0,0,.22);padding:18px}

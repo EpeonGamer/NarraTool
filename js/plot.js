@@ -58,16 +58,53 @@ function plotMatches(){
   });
 }
 function plotIsFiltered(){const s=plotQueryState();return !!(s.q||s.tag||s.mode!=='all');}
-function plotAdd(parentId=null,afterId=null){
+function plotAdd(parentId=null,afterId=null,opts){
+  opts=opts||{};
   normalizePlotData();
-  pushUndoSnapshot();
-  const id=makePlotId(),p={id,text:'',parentId:typeof parentId==='string'?parentId:null,children:[],tags:[],links:[],color:null};
+  if(!opts.skipUndo)pushUndoSnapshot();
+  const id=makePlotId(),p={id,text:typeof opts.text==='string'?opts.text:'',parentId:typeof parentId==='string'?parentId:null,children:[],tags:[],links:[],color:null};
   if(p.parentId!=null){const par=plotIdea(p.parentId);if(!par)p.parentId=null;}
+  if(p.text)p.links=[...p.text.matchAll(/\[\[([^\]]+)\]\]/g)].map(m=>(m[1].split('|')[0]||'').trim()).filter(Boolean);
   plotIdeas.push(p);
   if(p.parentId!=null){const par=plotIdea(p.parentId);const at=afterId!=null?par.children.indexOf(afterId):-1;if(at>=0)par.children.splice(at+1,0,id);else par.children.push(id);}
   activePlotId=id;plotFocusId=p.parentId??plotFocusId;clearPlotFilters();scheduleSave();renderPlotWorkspace();
-  requestAnimationFrame(()=>{const el=document.querySelector('[data-plot-id="'+id+'"]');if(el){el.focus();setCaretOffset(el,el.textContent.length);}});
+  requestAnimationFrame(()=>{
+    const el=document.querySelector('[data-plot-id="'+id+'"]');
+    if(el){
+      el.focus();
+      const caret=opts.caretAtStart?0:(el.textContent||'').length;
+      setCaretOffset(el,caret);
+    }
+  });
   return id;
+}
+/** Split a plot idea at the caret: text after the cursor moves into a new sibling (or child if asChild). */
+function plotSplitAtCaret(el,p,asChild){
+  if(!el||!p)return;
+  const raw=el.textContent||'';
+  const offset=getCaretOffset(el)??raw.length;
+  const before=raw.slice(0,offset);
+  const after=raw.slice(offset);
+  pushUndoSnapshot();
+  // Suppress blur→save while the old editor is torn down, and truncate the
+  // live DOM so residual handlers cannot restore the trailing half.
+  applyingUndo=true;
+  try{
+    p.text=before;
+    p.links=[...before.matchAll(/\[\[([^\]]+)\]\]/g)].map(m=>(m[1].split('|')[0]||'').trim()).filter(Boolean);
+    if(el.__mdGetSet)el.__mdGetSet.set(before);
+    try{renderMarkdownInto(el,before);}catch(e){}
+    if(asChild)plotAdd(p.id,null,{text:after,skipUndo:true,caretAtStart:true});
+    else plotAdd(p.parentId,p.id,{text:after,skipUndo:true,caretAtStart:true});
+  }finally{
+    applyingUndo=false;
+  }
+  // Final guard against anything that restored the trailing half during render.
+  const cur=plotIdea(p.id);
+  if(cur&&cur.text!==before){
+    cur.text=before;
+    cur.links=[...before.matchAll(/\[\[([^\]]+)\]\]/g)].map(m=>(m[1].split('|')[0]||'').trim()).filter(Boolean);
+  }
 }
 function plotUpdateText(id,v){const p=plotIdea(id);if(!p)return;p.text=v;p.links=[...v.matchAll(/\[\[([^\]]+)\]\]/g)].map(m=>(m[1].split('|')[0]||'').trim()).filter(Boolean);scheduleSave();}
 function plotDelete(id){
@@ -156,9 +193,9 @@ function plotTagDialog(id,anchor){
   const p=plotIdea(id);if(!p)return;
   closePlotDialog();
   const d=document.createElement('div');d.className='plot-tag-editor';d.id='plot-tag-editor';d.dataset.plotId=String(id);
+  d.innerHTML='<div class="plot-tag-editor-title">Tags</div>';
   const chips=document.createElement('div');chips.className='plot-tag-editor-chips';
-  d.innerHTML='<div class="plot-tag-editor-title">Tags</div>';d.appendChild(chips);
-  renderPlotTagChips(id);
+  d.appendChild(chips);
   const input=document.createElement('input');input.className='plot-tag-editor-input';input.placeholder='Add tag…';input.setAttribute('aria-label','Add tag');
   const pick=tag=>{addPlotTag(id,tag);input.value='';renderPlotTagChips(id);hideTagAC();input.focus();};
   input.addEventListener('input',()=>updateTagAutocomplete(input,plotIdea(id)?.tags||[],pick));
@@ -172,8 +209,12 @@ function plotTagDialog(id,anchor){
     if(e.key==='Backspace'&&!input.value&&(p.tags||[]).length){pushUndoSnapshot();p.tags.pop();renderPlotTagChips(id);scheduleSave();renderPlotWorkspace();}
     if(e.key==='Escape'){if(tagAcOpen()){hideTagAC();return;}closePlotDialog();}
   };
-  d.appendChild(input);const help=document.createElement('div');help.className='plot-tag-editor-help';help.textContent='Press Enter to add a tag.';d.appendChild(help);
-  document.body.appendChild(d);positionPlotPopover(d,anchor);input.focus();
+  d.appendChild(input);
+  const help=document.createElement('div');help.className='plot-tag-editor-help';help.textContent='Press Enter to add a tag.';d.appendChild(help);
+  document.body.appendChild(d);
+  renderPlotTagChips(id);
+  positionPlotPopover(d,anchor);
+  input.focus();
 }
 function renderPlotTagChips(id){
   const d=document.getElementById('plot-tag-editor');if(!d)return;
@@ -270,8 +311,8 @@ function renderPlotEditor(p){
   const ed=document.createElement('div');ed.className='plot-node-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write an idea…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot idea');
   renderMarkdownInto(ed,p.text||'');
   wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;},onKeydown:e=>{
-    if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotAdd(p.parentId,p.id);}
-    else if(e.key==='Tab'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotAdd(p.id,null);}
+    if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotSplitAtCaret(ed,plotIdea(p.id),false);}
+    else if(e.key==='Tab'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotSplitAtCaret(ed,plotIdea(p.id),true);}
   }});
   return ed;
 }
@@ -319,17 +360,14 @@ function renderPlotNode(p,visible){
   node.append(gutter,renderPlotEditor(p));
   if(p.children.length){const meta=document.createElement('span');meta.className='plot-meta';meta.textContent=p.children.length+' child'+(p.children.length===1?'':'ren');node.appendChild(meta);}
   row.appendChild(node);branch.appendChild(row);
-  if(p.tags.length){const ts=document.createElement('div');ts.className='plot-tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});branch.appendChild(ts);}
-  if(!plotCollapsed.has(p.id)){const childWrap=document.createElement('div');childWrap.className='plot-children';p.children.forEach(cid=>{const ch=plotIdea(cid);if(!ch)return;const n=renderPlotNode(ch,visible);if(n)childWrap.appendChild(n);});if(childWrap.children.length)branch.appendChild(childWrap);}
+  if(p.tags.length){const ts=document.createElement('div');ts.className='plot-tags';ts.title='Edit tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});ts.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,ts);};branch.appendChild(ts);}
+  if(!plotCollapsed.has(p.id)){const childWrap=document.createElement('div');childWrap.className='plot-children';plotSortedItems(p.children.map(cid=>plotIdea(cid))).forEach(ch=>{const n=renderPlotNode(ch,visible);if(n)childWrap.appendChild(n);});if(childWrap.children.length)branch.appendChild(childWrap);}
   row.addEventListener('click',e=>{if(e.target.closest('button,.plot-node-editor'))return;activePlotId=p.id;plotFocusId=p.id;renderPlotWorkspace();});
   row.addEventListener('dblclick',e=>{if(e.target.closest('button,.plot-node-editor'))return;plotRevealNode(p.id);});
   return branch;
 }
 function plotSearchResults(){
-  const results=plotMatches();
-  const sort=document.getElementById('plot-sort')?.value||'story';
-  if(sort==='az')results.sort((a,b)=>(a.text||'').localeCompare(b.text||'',undefined,{sensitivity:'base'}));
-  return results;
+  return plotSortedItems(plotMatches());
 }
 function renderPlotSearchResults(canvas){
   const results=plotSearchResults();const list=document.createElement('div');list.className='plot-search-result-list';
@@ -411,14 +449,26 @@ function renderPlotWorkspace(){
   if(plotIsFiltered()){renderPlotSearchResults(canvas);return;}
   if(plotView==='board'){renderPlotBoard(canvas);return;}
   if(plotView==='timeline'){renderPlotTimeline(canvas);return;}
-  const wrap=document.createElement('div');wrap.className='plot-root-list';plotRoots().forEach(p=>{const n=renderPlotNode(p,null);if(n)wrap.appendChild(n);});canvas.appendChild(wrap);
+  const wrap=document.createElement('div');wrap.className='plot-root-list';
+  plotSortedItems(plotRoots()).forEach(p=>{const n=renderPlotNode(p,null);if(n)wrap.appendChild(n);});
+  canvas.appendChild(wrap);
 }
 function plotContainerId(){return (plotFocusId&&plotIdea(plotFocusId))?plotFocusId:null;}
+function plotSortMode(){return document.getElementById('plot-sort')?.value||'story';}
+function plotSortedItems(items){
+  const list=(items||[]).filter(Boolean);
+  if(plotSortMode()==='az')return [...list].sort((a,b)=>(a.text||'').localeCompare(b.text||'',undefined,{sensitivity:'base'}));
+  return list;
+}
 function plotBoardItems(containerId){
-  if(containerId==null)return plotRoots();
-  const container=plotIdea(containerId);
-  if(!container)return plotRoots();
-  return container.children.map(cid=>plotIdea(cid)).filter(Boolean);
+  let items;
+  if(containerId==null)items=plotRoots();
+  else {
+    const container=plotIdea(containerId);
+    if(!container)items=plotRoots();
+    else items=container.children.map(cid=>plotIdea(cid)).filter(Boolean);
+  }
+  return plotSortedItems(items);
 }
 function plotBoardReorder(id,parentId,items,targetId,before){
   const rest=items.filter(x=>x.id!==id);
@@ -479,10 +529,13 @@ function renderPlotCard(p,items,parentId){
   head.append(left,actions);
   const ed=document.createElement('div');ed.className='plot-card-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write an idea…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot idea');
   renderMarkdownInto(ed,p.text||'');
-  wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;document.querySelectorAll('.plot-card.selected').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');}});
+  wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;document.querySelectorAll('.plot-card.selected').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');},onKeydown:e=>{
+    if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotSplitAtCaret(ed,plotIdea(p.id),false);}
+    else if(e.key==='Tab'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotSplitAtCaret(ed,plotIdea(p.id),true);}
+  }});
   card.addEventListener('click',e=>{if(e.target.closest('button,.plot-card-editor'))return;activePlotId=p.id;document.querySelectorAll('.plot-card.selected').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');});
   card.append(head,ed);
-  if(p.tags.length){const ts=document.createElement('div');ts.className='plot-card-tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});card.appendChild(ts);}
+  if(p.tags.length){const ts=document.createElement('div');ts.className='plot-card-tags';ts.title='Edit tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});ts.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,ts);};card.appendChild(ts);}
   const footer=document.createElement('div');footer.className='plot-card-footer';
   const openBtn=document.createElement('button');openBtn.type='button';openBtn.className='plot-card-open';
   openBtn.innerHTML=p.children.length?'<i class="ti ti-layout-grid"></i> Open '+p.children.length+' card'+(p.children.length===1?'':'s'):'<i class="ti ti-corner-down-right"></i> Open';
@@ -596,10 +649,13 @@ function renderPlotBeat(p,items,laneId){
   head.append(left,actions);
   const ed=document.createElement('div');ed.className='plot-beat-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write an idea…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot idea');
   renderMarkdownInto(ed,p.text||'');
-  wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;document.querySelectorAll('.plot-beat.selected').forEach(x=>x.classList.remove('selected'));beat.classList.add('selected');}});
+  wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;document.querySelectorAll('.plot-beat.selected').forEach(x=>x.classList.remove('selected'));beat.classList.add('selected');},onKeydown:e=>{
+    if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotSplitAtCaret(ed,plotIdea(p.id),false);}
+    else if(e.key==='Tab'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotSplitAtCaret(ed,plotIdea(p.id),true);}
+  }});
   beat.addEventListener('click',e=>{if(e.target.closest('button,.plot-beat-editor'))return;activePlotId=p.id;document.querySelectorAll('.plot-beat.selected').forEach(x=>x.classList.remove('selected'));beat.classList.add('selected');});
   beat.append(head,ed);
-  if(p.tags.length){const ts=document.createElement('div');ts.className='plot-card-tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});beat.appendChild(ts);}
+  if(p.tags.length){const ts=document.createElement('div');ts.className='plot-card-tags';ts.title='Edit tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});ts.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,ts);};beat.appendChild(ts);}
   if(p.children.length){const more=document.createElement('button');more.type='button';more.className='plot-beat-more';more.textContent=p.children.length+' nested idea'+(p.children.length===1?'':'s')+' →';more.onclick=e=>{e.stopPropagation();plotFocusId=p.id;renderPlotWorkspace();};beat.appendChild(more);}
   return beat;
 }

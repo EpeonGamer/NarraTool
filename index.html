@@ -36,7 +36,6 @@
         <div class="stat-row"><span class="stat-label">Read time:</span><span class="stat-val" id="rt">0 min</span></div>
         <div class="stat-total" id="total-wc"></div>
       </div>
-      <button class="side-btn" onclick="openStats()"><i class="ti ti-chart-bar"></i><span class="side-label hide-collapsed">Statistics & Goals</span></button>
       <button class="side-btn" id="backup-status-btn" onclick="handleBackupClick()" title="Local backup status">
         <span class="icon-badge-wrap"><i class="ti ti-device-floppy" id="backup-status-icon"></i><span class="save-dot" id="save-status-dot" title="Unsaved changes"></span></span><span class="side-label hide-collapsed" id="backup-status-label">Checking backup…</span>
       </button>
@@ -199,7 +198,6 @@
     <span><span>PDF <span style="font-size:10px;opacity:0.6">coming soon</span></span><span class="export-opt-sub">Formatted document</span></span>
   </button>
 </div>
-
 <div id="stats-modal" class="nw-modal" aria-hidden="true">
   <div class="nw-modal-card stats-card" role="dialog" aria-modal="true" aria-labelledby="stats-title">
     <div class="nw-modal-head"><div><div id="stats-title" class="nw-modal-title">Manuscript statistics</div><div id="stats-subtitle" class="nw-modal-subtitle"></div></div><button class="gutter-btn" onclick="closeStats()" title="Close"><i class="ti ti-x"></i></button></div>

@@ -1,10 +1,13 @@
-function addBlock(type,afterIndex){
+function addBlock(type,afterIndex,opts){
   const ch=activeChapter();if(!ch)return;
-  pushUndoSnapshot();
+  opts=opts||{};
+  if(!opts.skipUndo)pushUndoSnapshot();
   const defaults={prose:{text:''},dialogue:{text:''},action:{text:''},thought:{text:''},scene:{text:''},image:{src:'',caption:''},custom:{text:'',label:'Custom',color:'#999999'},group:{name:'Group',collapsed:false}};
   const nb={type,id:nextBlockId++,...(defaults[type]||{text:''})};
+  if(typeof opts.text==='string')nb.text=opts.text;
   if(afterIndex!==undefined)ch.blocks.splice(afterIndex,0,nb);
   else ch.blocks.push(nb);
+  focusedId=nb.id;
   render();
   // For image blocks, immediately trigger upload
   if(type==='image'){
@@ -12,10 +15,48 @@ function addBlock(type,afterIndex){
   } else {
     setTimeout(()=>{
       const el=document.querySelector(`.block-wrap[data-id="${nb.id}"] [contenteditable]`);
-      if(el){el.focus();el.scrollIntoView({behavior:'smooth',block:'center'});}
+      if(el){
+        el.focus();
+        const caret=opts.caretAtStart?0:(el.textContent||'').length;
+        setCaretOffset(el,caret);
+        el.scrollIntoView({behavior:'smooth',block:'center'});
+        if(settings.typewriter)centerTypewriterCaret(el);
+      }
     },50);
   }
   save();
+}
+/** Split the current block at the caret: text after the cursor moves into a new sibling block. */
+function splitBlockAtCaret(el,block,index){
+  if(!el||!block)return;
+  const raw=el.textContent||'';
+  const offset=getCaretOffset(el)??raw.length;
+  const before=raw.slice(0,offset);
+  const after=raw.slice(offset);
+  pushUndoSnapshot();
+  // 1) Suppress blur→save while we tear down the old editor (blur would
+  //    otherwise write the full pre-split text back into the model).
+  // 2) Drop the virtualized DOM cache entry so render rebuilds this block
+  //    from the truncated model instead of reusing the stale full-text node.
+  applyingUndo=true;
+  try{
+    block.text=before;
+    if(el.__mdGetSet)el.__mdGetSet.set(before);
+    // Truncate the live DOM immediately so any residual handlers see before.
+    try{renderMarkdownInto(el,before);}catch(e){}
+    const entry=blockDom.get(block.id);
+    if(entry){
+      try{entry.ro&&entry.ro.disconnect();}catch(e){}
+      try{entry.wrap.remove();}catch(e){}
+      try{entry.dz.remove();}catch(e){}
+      blockDom.delete(block.id);
+    }
+    addBlock(block.type,index+1,{text:after,skipUndo:true,caretAtStart:true});
+  }finally{
+    applyingUndo=false;
+  }
+  // Final guard: nothing should have restored the trailing half.
+  if(block.text!==before)block.text=before;
 }
 function deleteBlock(id){
   const ch=activeChapter();if(!ch)return;

@@ -9,8 +9,6 @@ function loadWritingStats(){
       writingStats.streakGap=Math.max(0,Math.min(30,parseInt(parsed.streakGap,10)||0));
     }
   }catch(e){}
-  // Only retain days on which writing actually happened. Keep a bounded rolling
-  // window so streak metadata cannot grow with the age of the manuscript.
   const keys=Object.keys(writingStats.daily||{}).filter(k=>writingStats.daily[k]>0).sort().slice(-366);
   const keep={};keys.forEach(k=>keep[k]=writingStats.daily[k]);writingStats.daily=keep;
   const today=dateKey();
@@ -95,7 +93,23 @@ function centerTypewriterCaret(el){
     if(Math.abs(delta)>2)area.scrollBy({top:delta,behavior:'smooth'});
   });
 }
-function toggleTypewriterMode(){settings.typewriter=!settings.typewriter;document.body.classList.toggle('typewriter-mode',settings.typewriter);document.getElementById('typewriter-btn')?.classList.toggle('active',settings.typewriter);saveSettings();if(settings.typewriter){const el=document.activeElement;if(el?.matches('[contenteditable="true"]'))centerTypewriterCaret(el);}}
+function toggleTypewriterMode(){
+  settings.typewriter=!settings.typewriter;
+  document.body.classList.toggle('typewriter-mode',settings.typewriter);
+  document.getElementById('typewriter-btn')?.classList.toggle('active',settings.typewriter);
+  saveSettings();
+  if(settings.typewriter){
+    const el=document.activeElement;
+    if(el?.matches('[contenteditable="true"]')){
+      const wrap=el.closest('.block-wrap');
+      if(wrap)focusedId=parseInt(wrap.dataset.id,10);
+      refreshFocusClasses();
+      centerTypewriterCaret(el);
+    }
+  } else {
+    refreshFocusClasses();
+  }
+}
 function applyTypewriterMode(){document.body.classList.toggle('typewriter-mode',!!settings.typewriter);document.getElementById('typewriter-btn')?.classList.toggle('active',!!settings.typewriter);}
 function updateStats(){
   const bs=blocks();

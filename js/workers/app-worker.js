@@ -18,7 +18,6 @@ self.onmessage = function(event){
     });
   }
 };
-
 function search({chapters=[],plotIdeas=[],query=''}){
   const q=String(query||'').trim().toLowerCase();
   if(!q)return[];
@@ -34,13 +33,11 @@ function search({chapters=[],plotIdeas=[],query=''}){
       snippet:value.slice(Math.max(0,idx-50),idx+q.length+60)
     });
   };
-
   chapters.forEach(ch=>{
     add('chapter',{chapterId:ch.id},ch.name,ch.name);
     (ch.aliases||[]).forEach(alias=>add('chapter',{chapterId:ch.id},ch.name,alias));
     (ch.tags||[]).forEach(tag=>add('chapter',{chapterId:ch.id},ch.name,tag));
     add('chapter',{chapterId:ch.id},ch.name,ch.notes||'');
-
     (ch.blocks||[]).forEach(b=>{
       const text=b.type==='group'?(b.name||''):(b.text||'');
       add('block',{chapterId:ch.id,blockId:b.id},ch.name,text);
@@ -48,15 +45,12 @@ function search({chapters=[],plotIdeas=[],query=''}){
       if(b.type==='image')add('block',{chapterId:ch.id,blockId:b.id},ch.name,b.caption||'');
     });
   });
-
   plotIdeas.forEach(p=>{
     add('plot',{plotId:p.id},'Plot idea',p.text||'');
     (p.tags||[]).forEach(tag=>add('plot',{plotId:p.id},'Plot idea',tag));
   });
-
   return out.slice(0,200);
 }
-
 function compileTxt({chapters=[],imgMap={}}){
   return chapters.map(ch=>{
     const h='─── '+ch.name+' ───';

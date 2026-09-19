@@ -121,9 +121,9 @@ function buildBlockWrap(b,i,bs){
     p.spellcheck=true;
     renderMarkdownInto(p,b.text||'');
     wireMdEditable(p,{get:()=>b.text,set:v=>{const old=countWords(b.text);b.text=v;recordWritingWords(Math.max(0,countWords(v)-old));scheduleSave();updateStats();}},{
-      onFocus:()=>{focusedId=b.id;if(viewMode==='focus')refreshFocusClasses();},
+      onFocus:()=>{focusedId=b.id;if(viewMode==='focus'||settings.typewriter)refreshFocusClasses();},
       onBlur:()=>save(),
-      onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addBlock(b.type,i+1);}}
+      onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();splitBlockAtCaret(p,b,i);}}
     });
     inner.appendChild(label);inner.appendChild(p);
   }
@@ -205,9 +205,9 @@ function buildCustomBlock(b,inner,i){
   p.style.fontSize='16px';p.style.lineHeight='1.7';
   renderMarkdownInto(p,b.text||'');
   wireMdEditable(p,{get:()=>b.text,set:v=>{const old=countWords(b.text);b.text=v;recordWritingWords(Math.max(0,countWords(v)-old));scheduleSave();updateStats();}},{
-    onFocus:()=>{focusedId=b.id;if(viewMode==='focus')refreshFocusClasses();},
+    onFocus:()=>{focusedId=b.id;if(viewMode==='focus'||settings.typewriter)refreshFocusClasses();},
     onBlur:()=>save(),
-    onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();addBlock(b.type,i+1);}}
+    onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();splitBlockAtCaret(p,b,i);}}
   });
   inner.appendChild(p);
 }

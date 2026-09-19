@@ -1,4 +1,3 @@
-// ── Sidebar ──
 function renderSidebar(){
   const list=document.getElementById('collection-list');
   list.innerHTML='';

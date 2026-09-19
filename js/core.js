@@ -430,11 +430,6 @@ function invalidateBlockDomCache(){
 }
 function restoreSnapshot(snap){
   applyingUndo=true;
-  // History replaces the entire model with cloned objects. Any cached block
-  // DOM is therefore stale (its event handlers close over the old block
-  // objects), even when the active chapter id is unchanged. Invalidate the
-  // virtualization cache before rendering so undo/redo cannot resurrect or
-  // edit pre-history state.
   invalidateBlockDomCache();
   collections=JSON.parse(JSON.stringify(snap.collections||[]));
   plotIdeas=JSON.parse(JSON.stringify(snap.plotIdeas||[]));

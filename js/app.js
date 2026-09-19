@@ -1,10 +1,7 @@
-// Confirm button action is bound directly in appConfirm().
-// Typewriter mode keeps the active caret/line centered without re-rendering siblings.
 document.addEventListener('focusin',e=>{if(e.target.matches('[contenteditable="true"]'))centerTypewriterCaret(e.target);});
 document.addEventListener('input',e=>{if(e.target.matches('[contenteditable="true"]'))centerTypewriterCaret(e.target);},true);
 document.addEventListener('keyup',e=>{if(e.target.matches('[contenteditable="true"]'))centerTypewriterCaret(e.target);},true);
 document.getElementById('stats-modal')?.addEventListener('click',e=>{if(e.target.id==='stats-modal')closeStats();});
-// Global undo/redo/save — captured ahead of any element's own keydown handler
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&!e.altKey){
     const k=e.key.toLowerCase();
