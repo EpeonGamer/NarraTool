@@ -93,6 +93,7 @@
     --sans:'Inter',system-ui,sans-serif; --serif:'Lora',Georgia,serif;
     --prose-accent:#378ADD; --dialogue-accent:#D85A30;
     --action-accent:#639922; --thought-accent:#7F77DD; --scene-accent:#D4537E;
+    --muted:var(--text3); --hover:var(--bg3); --input:var(--bg2);
   }
   [data-theme="dark"] {
     --bg:#1c1c1a; --bg2:#242422; --bg3:#2c2c2a;
@@ -100,6 +101,7 @@
     --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.15);
     --prose-accent:#85B7EB; --dialogue-accent:#F0997B;
     --action-accent:#97C459; --thought-accent:#AFA9EC; --scene-accent:#ED93B1;
+    --muted:var(--text3); --hover:var(--bg3); --input:var(--bg2);
   }
   html,body{height:100%;background:var(--bg3);color:var(--text);font-family:var(--sans);}
 
@@ -144,6 +146,11 @@
   html.icons-fallback .ti-circle-check-filled:before{content:"✓"!important;}
   html.icons-fallback .ti-cloud-off:before{content:"☁"!important;}
   html.icons-fallback .ti-copy:before{content:"⧉"!important;}
+  html.icons-fallback .ti-list-tree:before{content:"🌲"!important;}
+  html.icons-fallback .ti-layout-grid:before{content:"▦"!important;}
+  html.icons-fallback .ti-timeline:before{content:"🛤"!important;}
+  html.icons-fallback .ti-tag:before{content:"🏷"!important;}
+  html.icons-fallback .ti-corner-down-right:before{content:"↳"!important;}
   #eye-widget{--eye-white:#fff;--eye-rim:#c0c0c0;--eye-pupil:#1a1a18;--eye-glint:#fff;}
   .nw-eye{display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.18));transition:transform 0.08s;}
   #shell{display:flex;height:100vh;}
@@ -529,7 +536,9 @@
 #plot-toolbar{height:54px;border-bottom:.5px solid var(--border2);display:flex;align-items:center;gap:8px;padding:0 14px;flex-shrink:0;background:var(--bg2);}
 
 
-#plot-title{font-weight:600;white-space:nowrap}.plot-crumb{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+#plot-title{font-weight:600;white-space:nowrap}.plot-crumb{display:flex;align-items:center;gap:2px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;flex:1;scrollbar-width:none;}.plot-crumb::-webkit-scrollbar{display:none}
+.plot-crumb-seg{flex-shrink:0;border:0;background:transparent;color:var(--muted);font-size:12px;padding:3px 5px;border-radius:4px;cursor:pointer;max-width:180px;overflow:hidden;text-overflow:ellipsis}.plot-crumb-seg:hover{background:var(--hover);color:var(--text)}.plot-crumb-seg.current{color:var(--text);font-weight:500;cursor:default}.plot-crumb-seg.current:hover{background:transparent}.plot-crumb-sep{flex-shrink:0;color:var(--text3);font-size:11px}
+.plot-view-toggle{display:flex;border:.5px solid var(--border2);border-radius:6px;overflow:hidden;flex-shrink:0}.plot-view-toggle-btn{width:29px;height:29px;border:0;background:var(--bg);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center}.plot-view-toggle-btn+.plot-view-toggle-btn{border-left:.5px solid var(--border2)}.plot-view-toggle-btn:hover{background:var(--hover);color:var(--text)}.plot-view-toggle-btn.active{background:var(--thought-accent);color:#fff}
 .plot-help{font-size:10px;color:var(--muted);white-space:nowrap}.plot-search{width:260px;max-width:28vw;background:var(--input);border:.5px solid var(--border2);border-radius:6px;padding:7px 9px;color:var(--text);outline:none;}
 .plot-toolbar-btn{border:.5px solid var(--border2);background:var(--bg);color:var(--text);border-radius:6px;padding:7px 9px;cursor:pointer}.plot-toolbar-btn:hover{background:var(--hover)}
 #plot-filterbar{display:none;border-bottom:.5px solid var(--border2);padding:7px 14px;gap:8px;align-items:center;background:var(--bg2)}#plot-filterbar.open{display:flex}.plot-filter-input{background:var(--input);border:.5px solid var(--border2);border-radius:5px;padding:6px 8px;color:var(--text);outline:none;}
@@ -545,8 +554,94 @@
 .plot-tags{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 2px 56px}.plot-tag{font-size:10px;border:1px solid var(--border2);border-radius:10px;padding:1px 6px;color:var(--muted)}
 .plot-tag-editor{position:fixed;z-index:900;background:var(--bg);border:0.5px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:9px;min-width:240px;max-width:340px}.plot-tag-editor-title{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:7px}.plot-tag-editor-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}.plot-tag-editor .chapter-tag-chip{font-size:11px}.plot-tag-editor-input{width:100%;border:0;background:transparent;outline:none;color:var(--text);font:12px var(--sans);padding:5px 2px}.plot-tag-editor-input::placeholder{color:var(--text3)}.plot-tag-editor-help{font-size:10px;color:var(--text3);margin-top:4px}
 .plot-meta{font-size:10px;color:var(--muted);margin-left:4px;white-space:nowrap;padding-top:5px}.plot-search-result-list{display:flex;flex-direction:column;gap:3px;max-width:900px;margin:0 auto}.plot-search-result{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border:1px solid transparent;border-radius:6px;background:transparent}.plot-search-result:hover{background:var(--bg2)}.plot-search-path{font-size:10px;color:var(--muted);margin:2px 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plot-search-body{flex:1;min-width:0}.plot-search-text{line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}.plot-dialog{position:fixed;z-index:650;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.18);padding:10px;min-width:250px;max-width:360px}.plot-dialog h4{margin:0 0 8px;font-size:12px}.plot-dialog input{width:100%;box-sizing:border-box;background:var(--input);border:1px solid var(--border2);border-radius:5px;padding:6px;color:var(--text);margin-bottom:7px}.plot-dialog-actions{display:flex;justify-content:flex-end;gap:5px}.plot-dialog button{border:1px solid var(--border2);background:var(--bg);color:var(--text);border-radius:5px;padding:5px 8px;cursor:pointer}.plot-dialog button.primary{background:var(--thought-accent);color:white;border-color:var(--thought-accent)}
+.plot-node.plot-flash{animation:plotFlash 1.2s ease}
+@keyframes plotFlash{0%{background:color-mix(in srgb,var(--thought-accent) 32%,var(--bg2));box-shadow:0 0 0 2px var(--thought-accent)}70%{background:color-mix(in srgb,var(--thought-accent) 32%,var(--bg2));box-shadow:0 0 0 2px var(--thought-accent)}100%{background:var(--bg2);box-shadow:none}}
 .plot-node.dragging,.plot-search-result.dragging{opacity:.45}.plot-drop-child{outline:2px dashed var(--thought-accent);outline-offset:2px}.plot-drop-before{box-shadow:0 -2px 0 var(--thought-accent)}.plot-drop-after{box-shadow:0 2px 0 var(--thought-accent)}
+/* Corkboard / index-card view */
+.plot-board-wrap{max-width:1160px;margin:0 auto}
+.plot-board{display:flex;flex-wrap:wrap;gap:14px;align-content:flex-start}
+.plot-card{width:216px;min-height:158px;display:flex;flex-direction:column;border:1px solid var(--border2);border-radius:9px;background:var(--bg2);padding:10px 11px;transition:border-color .12s,box-shadow .12s}
+.plot-card:hover{border-color:color-mix(in srgb,var(--thought-accent) 45%,var(--border2))}
+.plot-card.selected{border-color:var(--thought-accent);box-shadow:0 0 0 1px var(--thought-accent)}
+.plot-card.dragging{opacity:.4}
+.plot-card.drop-before{box-shadow:-3px 0 0 var(--thought-accent)}.plot-card.drop-after{box-shadow:3px 0 0 var(--thought-accent)}
+.plot-card.plot-flash{animation:plotFlash 1.2s ease}
+.plot-card-head{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:5px}
+.plot-card-actions{display:flex;gap:1px;opacity:0;transition:opacity .12s}
+.plot-card:hover .plot-card-actions,.plot-card:focus-within .plot-card-actions{opacity:1}
+.plot-card-editor{flex:1;min-height:64px;outline:none;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;overflow:hidden}
+.plot-card-editor:empty:before{content:attr(data-placeholder);color:var(--muted)}
+.plot-card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.plot-card-footer{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:8px;padding-top:7px;border-top:.5px solid var(--border2)}
+.plot-card-open{border:0;background:transparent;color:var(--muted);font-size:11px;padding:3px 4px;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.plot-card-open:hover{background:var(--hover);color:var(--text)}
+.plot-card-add{width:216px;min-height:158px;border:1px dashed var(--border2);border-radius:9px;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px}
+/* Color coding */
+.plot-color-btn{display:flex;align-items:center;justify-content:center}
+.plot-color-dot{width:12px;height:12px;border-radius:50%;background:var(--border2)}
+.plot-color-dot.empty{background:transparent;border:1.5px dashed var(--border2)}
+.plot-color-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:2px 1px 3px}
+.plot-color-swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;box-sizing:border-box}
+.plot-color-swatch.active{border-color:var(--text)}
+.plot-color-swatch.none{background:var(--bg);border:1.5px dashed var(--border2);position:relative}
+.plot-color-swatch.none:after{content:"";position:absolute;left:4px;right:4px;top:50%;height:1.5px;background:var(--text3);transform:rotate(-45deg)}
+.plot-color-swatch.none.active{border-style:solid;border-color:var(--text)}
+.plot-node{position:relative}
+.plot-node:before{content:"";position:absolute;left:2px;top:4px;bottom:4px;width:3px;border-radius:2px;background:transparent}
+#plot-workspace.colors-active .plot-node{padding-left:10px}
+#plot-workspace.colors-active .plot-node:before{background:var(--plot-color,var(--border2))}
+.plot-card{position:relative}
+.plot-card:before{content:"";position:absolute;left:4px;top:10px;bottom:10px;width:3px;border-radius:2px;background:transparent}
+#plot-workspace.colors-active .plot-card{padding-left:15px}
+#plot-workspace.colors-active .plot-card:before{background:var(--plot-color,var(--border2))}
+.plot-card-add:hover{border-color:var(--thought-accent);color:var(--text)}
+@media(max-width:800px){.plot-card,.plot-card-add{width:100%}.plot-board-wrap{max-width:100%}}
 @media(max-width:800px){.plot-search{width:150px}.plot-toolbar-btn span{display:none}.plot-toolbar{padding:0 8px}.plot-crumb{display:none}.plot-root-list{min-width:0}.plot-branch{margin-left:16px;padding-left:14px}.plot-branch>.plot-node-row:before{left:-15px;width:14px}.plot-filter-input{max-width:140px}}
+/* Timeline / swimlane view */
+.plot-timeline{display:flex;flex-direction:column;gap:14px;max-width:1400px;margin:0 auto}
+.plot-lane{position:relative;border:1px solid var(--border2);border-radius:10px;background:var(--bg2);transition:border-color .12s,box-shadow .12s}
+.plot-lane:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 2px 2px 0;background:transparent}
+#plot-workspace.colors-active .plot-lane{padding-left:3px}
+#plot-workspace.colors-active .plot-lane:before{background:var(--plot-color,var(--border2))}
+.plot-lane.dragging{opacity:.4}
+.plot-lane.drop-before{box-shadow:0 -3px 0 var(--thought-accent)}
+.plot-lane.drop-after{box-shadow:0 3px 0 var(--thought-accent)}
+.plot-lane-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid var(--border2)}
+.plot-lane-grip{cursor:grab;color:var(--muted);display:flex;align-items:center;flex-shrink:0;touch-action:none}
+.plot-lane-grip:hover{color:var(--text)}
+.plot-lane-grip:active{cursor:grabbing}
+.plot-lane-title{font-size:14px;font-weight:500;outline:none;flex:1;min-width:0;padding:3px 5px;border-radius:5px;line-height:1.4;overflow-wrap:anywhere}
+.plot-lane-title:empty:before{content:attr(data-placeholder);color:var(--muted)}
+.plot-lane-title:hover{background:var(--hover)}
+.plot-lane-title:focus{background:var(--bg)}
+.plot-lane-count{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.plot-lane-actions{display:flex;gap:1px;flex-shrink:0;opacity:0;transition:opacity .12s}
+.plot-lane:hover .plot-lane-actions,.plot-lane:focus-within .plot-lane-actions{opacity:1}
+.plot-lane-track{display:flex;align-items:stretch;gap:10px;padding:12px;overflow-x:auto}
+.plot-lane-track::-webkit-scrollbar{height:6px}
+.plot-lane-track::-webkit-scrollbar-track{background:transparent}
+.plot-lane-track::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.plot-lane-add{align-self:flex-start;margin:0 auto;border:1px dashed var(--border2);background:transparent;color:var(--muted);border-radius:8px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px}
+.plot-lane-add:hover{border-color:var(--thought-accent);color:var(--text)}
+.plot-beat{position:relative;width:200px;flex-shrink:0;display:flex;flex-direction:column;border:1px solid var(--border2);border-radius:8px;background:var(--bg);padding:8px 10px}
+.plot-beat:hover{border-color:color-mix(in srgb,var(--thought-accent) 45%,var(--border2))}
+.plot-beat.selected{border-color:var(--thought-accent);box-shadow:0 0 0 1px var(--thought-accent)}
+.plot-beat.dragging{opacity:.4}
+.plot-beat.drop-before{box-shadow:-3px 0 0 var(--thought-accent)}
+.plot-beat.drop-after{box-shadow:3px 0 0 var(--thought-accent)}
+.plot-beat:before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:0 2px 2px 0;background:transparent}
+#plot-workspace.colors-active .plot-beat{padding-left:13px}
+#plot-workspace.colors-active .plot-beat:before{background:var(--plot-color,var(--border2))}
+.plot-beat-head{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:5px}
+.plot-beat-actions{display:flex;gap:1px;opacity:0;transition:opacity .12s}
+.plot-beat:hover .plot-beat-actions,.plot-beat:focus-within .plot-beat-actions{opacity:1}
+.plot-beat-editor{flex:1;min-height:56px;outline:none;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.plot-beat-editor:empty:before{content:attr(data-placeholder);color:var(--muted)}
+.plot-beat-more{margin-top:6px;border:0;background:transparent;color:var(--muted);font-size:11px;padding:2px 0;cursor:pointer;text-align:left}
+.plot-beat-more:hover{color:var(--text)}
+.plot-beat-add{flex-shrink:0;align-self:stretch;width:76px;border:1px dashed var(--border2);background:transparent;color:var(--muted);border-radius:8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px}
+.plot-beat-add:hover{border-color:var(--thought-accent);color:var(--text)}
+@media(max-width:800px){.plot-beat{width:160px}.plot-lane-head{flex-wrap:wrap}}
 </style>
 </head>
 <body>
@@ -660,13 +755,18 @@
   <div id="plot-toolbar">
     <strong id="plot-title">Plot Workspace</strong>
     <span id="plot-crumb" class="plot-crumb">Story</span>
+    <div id="plot-view-toggle" class="plot-view-toggle">
+      <button id="plot-view-tree" class="plot-view-toggle-btn" title="Outline view" onclick="setPlotView('tree')"><i class="ti ti-list-tree"></i></button>
+      <button id="plot-view-board" class="plot-view-toggle-btn" title="Corkboard view" onclick="setPlotView('board')"><i class="ti ti-layout-grid"></i></button>
+      <button id="plot-view-timeline" class="plot-view-toggle-btn" title="Timeline view (storylines as lanes)" onclick="setPlotView('timeline')"><i class="ti ti-timeline"></i></button>
+    </div>
     <input id="plot-search" class="plot-search" placeholder="Search ideas…" oninput="renderPlotWorkspace()">
     <select id="plot-sort" class="plot-filter-input" title="Sort the current view" onchange="renderPlotWorkspace()">
       <option value="story">Story order</option>
       <option value="az">A–Z</option>
     </select>
     <button class="plot-toolbar-btn" onclick="togglePlotFilters()"><i class="ti ti-adjustments-horizontal"></i> <span>Filter</span></button>
-    <button class="plot-toolbar-btn" onclick="plotAdd(null,null)"><i class="ti ti-plus"></i> <span>New idea</span></button>
+    <button class="plot-toolbar-btn" onclick="plotAdd(plotFocusId,null)"><i class="ti ti-plus"></i> <span>New idea</span></button>
     <button class="plot-toolbar-btn" onclick="closePlotWorkspace()" title="Close Plot Workspace"><i class="ti ti-x"></i></button>
   </div>
   <div id="plot-filterbar">
@@ -811,6 +911,9 @@ const CUSTOM_COLORS= ['#E85D5D','#E8935D','#D4B84A','#6BAE5E','#5D9FE8','#8B6BE8
 const CHAPTER_TYPES       = ['chapter','character','location','item','custom'];
 const CHAPTER_TYPE_LABELS = {chapter:'Chapter',character:'Character',location:'Location',item:'Item',custom:'Custom type'};
 const CHAPTER_TYPE_COLORS = {chapter:'#8C8C8C',character:'#5D9FE8',location:'#6BAE5E',item:'#D4B84A',custom:'#999999'};
+const PLOT_COLORS=[{id:'red',hex:'#E5484D'},{id:'orange',hex:'#F2994A'},{id:'amber',hex:'#D4B84A'},{id:'green',hex:'#6BAE5E'},{id:'teal',hex:'#3DB9A8'},{id:'blue',hex:'#5D9FE8'},{id:'purple',hex:'#9B6FE0'},{id:'pink',hex:'#E36BA6'}];
+const PLOT_COLOR_HEX=Object.fromEntries(PLOT_COLORS.map(c=>[c.id,c.hex]));
+function plotColorsActive(){return plotIdeas.some(p=>p&&p.color);}
 function chapterType(ch){return CHAPTER_TYPES.includes(ch&&ch.type)?ch.type:'chapter';}
 function chapterTypeLabel(ch){return chapterType(ch)==='custom'?(ch&&ch.customType||'Custom type'):CHAPTER_TYPE_LABELS[chapterType(ch)];}
 function chapterAliases(ch){return Array.isArray(ch&&ch.aliases)?ch.aliases:[];}
@@ -824,9 +927,10 @@ let viewMode='normal', showLabels=true, focusedId=null;
 let pickerTargetId=null, saveTimer=null;
 let dragId=null, dragOverIndex=null;
 let chapDragId=null, chapDragOverIndex=null, chapDragCollId=null;
-let settings={fontSize:17,width:'medium',lineHeight:'normal',eyes:true,eyeOrientation:'vertical'};
+let settings={fontSize:17,width:'medium',lineHeight:'normal',eyes:true,eyeOrientation:'vertical',plotView:'tree'};
 let pendingImageBlockId=null; // which block is waiting for file input
 let plotIdeas=[],activePlotId=null,plotFocusId=null,plotCollapsed=new Set(),plotDragId=null,plotDragMode=null;
+let plotView='tree';
 // ── Undo / redo ──
 // Whole-state snapshots, kept in memory only (never persisted to localStorage
 // or exported files, so they can never bloat saved/exported file size).
@@ -1257,6 +1361,7 @@ function normalizePlotData(){
     p.tags=Array.isArray(p.tags)?p.tags.filter(x=>typeof x==='string'):[];
     p.links=Array.isArray(p.links)?p.links.filter(x=>typeof x==='string'):[];
     if(typeof p.text!=='string')p.text='';
+    p.color=(typeof p.color==='string'&&PLOT_COLOR_HEX[p.color])?p.color:null;
     // Keep links as the contents of [[...]]; Plot Ideas use their short ID.
     p.links=[...new Set(p.links.map(x=>oldToNew.get(String(x))||String(x).trim()).filter(Boolean))];
   });
@@ -1287,12 +1392,12 @@ function plotIsFiltered(){const s=plotQueryState();return !!(s.q||s.tag||s.mode!
 function plotAdd(parentId=null,afterId=null){
   normalizePlotData();
   pushUndoSnapshot();
-  const id=makePlotId(),p={id,text:'',parentId:typeof parentId==='string'?parentId:null,children:[],tags:[],links:[]};
+  const id=makePlotId(),p={id,text:'',parentId:typeof parentId==='string'?parentId:null,children:[],tags:[],links:[],color:null};
   if(p.parentId!=null){const par=plotIdea(p.parentId);if(!par)p.parentId=null;}
   plotIdeas.push(p);
   if(p.parentId!=null){const par=plotIdea(p.parentId);const at=afterId!=null?par.children.indexOf(afterId):-1;if(at>=0)par.children.splice(at+1,0,id);else par.children.push(id);}
   activePlotId=id;plotFocusId=p.parentId??plotFocusId;clearPlotFilters();scheduleSave();renderPlotWorkspace();
-  requestAnimationFrame(()=>{const el=document.querySelector('.plot-node-editor[data-plot-id="'+id+'"]');if(el){el.focus();setCaretOffset(el,el.textContent.length);}});
+  requestAnimationFrame(()=>{const el=document.querySelector('[data-plot-id="'+id+'"]');if(el){el.focus();setCaretOffset(el,el.textContent.length);}});
   return id;
 }
 function plotUpdateText(id,v){const p=plotIdea(id);if(!p)return;p.text=v;p.links=[...v.matchAll(/\[\[([^\]]+)\]\]/g)].map(m=>(m[1].split('|')[0]||'').trim()).filter(Boolean);scheduleSave();}
@@ -1336,6 +1441,30 @@ function plotDeleteWithConfirm(id,anchor){
   const label=(p.text||'Untitled idea').trim()||'Untitled idea';
   appConfirm('Delete '+JSON.stringify(label)+' and all of its children?','Delete',()=>plotDelete(id),anchor);
 }
+function plotColorDialog(id,anchor){
+  const p=plotIdea(id);if(!p)return;
+  closePlotDialog();
+  const d=document.createElement('div');d.className='plot-tag-editor';d.id='plot-color-editor';d.dataset.plotId=String(id);
+  d.innerHTML='<div class="plot-tag-editor-title">Color</div>';
+  const grid=document.createElement('div');grid.className='plot-color-grid';
+  const pick=c=>{pushUndoSnapshot();p.color=c;scheduleSave();closePlotDialog();renderPlotWorkspace();};
+  const none=document.createElement('button');none.type='button';none.className='plot-color-swatch none'+(!p.color?' active':'');none.title='No color';none.setAttribute('aria-label','No color');none.onclick=()=>pick(null);
+  grid.appendChild(none);
+  PLOT_COLORS.forEach(c=>{
+    const b=document.createElement('button');b.type='button';b.className='plot-color-swatch'+(p.color===c.id?' active':'');b.style.background=c.hex;b.title=c.id;b.setAttribute('aria-label',c.id);b.onclick=()=>pick(c.id);
+    grid.appendChild(b);
+  });
+  d.appendChild(grid);
+  document.body.appendChild(d);positionPlotPopover(d,anchor);
+}
+function renderPlotColorBtn(p){
+  const btn=document.createElement('button');btn.type='button';btn.className='plot-icon-btn plot-color-btn';btn.title='Set color';btn.setAttribute('aria-label','Set color for this idea');
+  const dot=document.createElement('span');dot.className='plot-color-dot'+(p.color?'':' empty');if(p.color)dot.style.background=PLOT_COLOR_HEX[p.color]||'';
+  btn.appendChild(dot);
+  btn.onclick=e=>{e.stopPropagation();plotColorDialog(p.id,btn);};
+  return btn;
+}
+function plotApplyColorVar(el,p){if(p.color)el.style.setProperty('--plot-color',PLOT_COLOR_HEX[p.color]);else el.style.removeProperty('--plot-color');}
 function plotTagDialog(id,anchor){
   const p=plotIdea(id);if(!p)return;
   closePlotDialog();
@@ -1368,6 +1497,8 @@ function renderPlotTagEditor(id){
 document.addEventListener('pointerdown',e=>{
   const d=document.getElementById('plot-tag-editor');
   if(d && !d.contains(e.target) && !e.target.closest('.plot-icon-btn[title="Edit tags"]')) d.remove();
+  const cd=document.getElementById('plot-color-editor');
+  if(cd && !cd.contains(e.target) && !e.target.closest('.plot-color-btn')) cd.remove();
 });
 function addPlotTag(id,raw){
   const p=plotIdea(id);if(!p)return;const tag=(raw||'').trim().replace(/,+$/,'').trim();if(!tag)return;
@@ -1392,11 +1523,12 @@ function positionPlotDialog(d){d.style.left=Math.max(10,(innerWidth-d.offsetWidt
 function closePlotDialog(){
   document.getElementById('plot-dialog')?.remove();
   document.getElementById('plot-tag-editor')?.remove();
+  document.getElementById('plot-color-editor')?.remove();
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function renderPlotEditor(p){
   const ed=document.createElement('div');ed.className='plot-node-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write an idea…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot idea');
-  ed.textContent=p.text||'';
+  renderMarkdownInto(ed,p.text||'');
   wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;},onKeydown:e=>{
     if(e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotAdd(p.parentId,p.id);}
     else if(e.key==='Tab'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();plotAdd(p.id,null);}
@@ -1409,23 +1541,43 @@ function renderPlotNode(p,visible){
   const branch=document.createElement('div');branch.className='plot-branch';branch.dataset.id=p.id;
   const row=document.createElement('div');row.className='plot-node-row';
   const node=document.createElement('div');node.className='plot-node'+(activePlotId===p.id?' selected':'');node.draggable=true;
-  node.addEventListener('dragstart',e=>{plotDragId=p.id;node.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
-  node.addEventListener('dragend',()=>{plotDragId=null;document.querySelectorAll('.plot-node,.plot-search-result').forEach(x=>x.classList.remove('dragging','plot-drop-child'));});
-  node.addEventListener('dragover',e=>{if(plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;e.preventDefault();node.classList.add('plot-drop-child');});
-  node.addEventListener('dragleave',()=>node.classList.remove('plot-drop-child'));
-  node.addEventListener('drop',e=>{e.preventDefault();node.classList.remove('plot-drop-child');if(plotDragId!=null&&plotDragId!==p.id&&!plotDescendant(plotDragId,p.id))plotMove(plotDragId,p.id,p.children.length);});
+  plotApplyColorVar(node,p);
+  node.addEventListener('dragstart',e=>{plotDragId=p.id;plotDragMode='tree';node.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+  node.addEventListener('dragend',()=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-node,.plot-search-result').forEach(x=>x.classList.remove('dragging','plot-drop-child','plot-drop-before','plot-drop-after'));});
+  node.addEventListener('dragover',e=>{
+    if(plotDragMode!=='tree'||plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
+    e.preventDefault();
+    const r=node.getBoundingClientRect(),frac=(e.clientY-r.top)/r.height;
+    node.classList.remove('plot-drop-before','plot-drop-after','plot-drop-child');
+    if(frac<0.28)node.classList.add('plot-drop-before');
+    else if(frac>0.72)node.classList.add('plot-drop-after');
+    else node.classList.add('plot-drop-child');
+  });
+  node.addEventListener('dragleave',()=>node.classList.remove('plot-drop-before','plot-drop-after','plot-drop-child'));
+  node.addEventListener('drop',e=>{
+    e.preventDefault();
+    const mode=node.classList.contains('plot-drop-before')?'before':node.classList.contains('plot-drop-after')?'after':'child';
+    node.classList.remove('plot-drop-before','plot-drop-after','plot-drop-child');
+    if(plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
+    if(mode==='child'){plotMove(plotDragId,p.id,p.children.length);return;}
+    const parentId=p.parentId;
+    const siblings=parentId!=null?(plotIdea(parentId)?.children||[]).map(cid=>plotIdea(cid)).filter(Boolean):plotRoots();
+    plotBoardReorder(plotDragId,parentId,siblings,p.id,mode==='before');
+  });
   const gutter=document.createElement('div');gutter.className='plot-gutter';
   if(p.children.length){const c=document.createElement('button');c.className='plot-icon-btn';c.title=plotCollapsed.has(p.id)?'Expand children':'Collapse children';c.innerHTML='<i class="ti '+(plotCollapsed.has(p.id)?'ti-chevron-right':'ti-chevron-down')+'"></i>';c.onclick=e=>{e.stopPropagation();plotCollapsed.has(p.id)?plotCollapsed.delete(p.id):plotCollapsed.add(p.id);renderPlotWorkspace();};gutter.appendChild(c);}
   const ref=document.createElement('button');ref.className='plot-ref-id';ref.type='button';ref.title='Copy reference [['+p.id+']]';ref.textContent=p.id;ref.onclick=async e=>{e.stopPropagation();await copyPlotIdeaRef(p.id);};gutter.appendChild(ref);
   const del=document.createElement('button');del.className='plot-icon-btn';del.type='button';del.title='Delete idea and children';del.innerHTML='<i class="ti ti-trash"></i>';del.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(p.id,del);};gutter.appendChild(del);
   const next=document.createElement('button');next.className='plot-icon-btn';next.title='Add next idea (Enter)';next.innerHTML='<i class="ti ti-plus"></i>';next.onclick=e=>{e.stopPropagation();plotAdd(p.parentId,p.id);};gutter.appendChild(next);
   const tags=document.createElement('button');tags.className='plot-icon-btn';tags.title='Edit tags';tags.innerHTML='<i class="ti ti-tag"></i>';tags.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,tags);};gutter.appendChild(tags);
+  gutter.appendChild(renderPlotColorBtn(p));
   node.append(gutter,renderPlotEditor(p));
   if(p.children.length){const meta=document.createElement('span');meta.className='plot-meta';meta.textContent=p.children.length+' child'+(p.children.length===1?'':'ren');node.appendChild(meta);}
   row.appendChild(node);branch.appendChild(row);
   if(p.tags.length){const ts=document.createElement('div');ts.className='plot-tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});branch.appendChild(ts);}
   if(!plotCollapsed.has(p.id)){const childWrap=document.createElement('div');childWrap.className='plot-children';p.children.forEach(cid=>{const ch=plotIdea(cid);if(!ch)return;const n=renderPlotNode(ch,visible);if(n)childWrap.appendChild(n);});if(childWrap.children.length)branch.appendChild(childWrap);}
   row.addEventListener('click',e=>{if(e.target.closest('button,.plot-node-editor'))return;activePlotId=p.id;plotFocusId=p.id;renderPlotWorkspace();});
+  row.addEventListener('dblclick',e=>{if(e.target.closest('button,.plot-node-editor'))return;plotRevealNode(p.id);});
   return branch;
 }
 function plotSearchResults(){
@@ -1444,20 +1596,245 @@ function renderPlotSearchResults(canvas){
     row.addEventListener('dragover',e=>{if(plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;e.preventDefault();row.classList.add('plot-drop-child');});
     row.addEventListener('dragleave',()=>row.classList.remove('plot-drop-child'));
     row.addEventListener('drop',e=>{e.preventDefault();row.classList.remove('plot-drop-child');if(plotDragId!=null&&plotDragId!==p.id&&!plotDescendant(plotDragId,p.id))plotMove(plotDragId,p.id,p.children.length);});
-    const body=document.createElement('div');body.className='plot-search-body';const path=document.createElement('div');path.className='plot-search-path';path.textContent=plotPathText(p.id);const text=document.createElement('div');text.className='plot-search-text';text.textContent=p.text||'Untitled idea';body.append(path,text);row.appendChild(body);row.onclick=()=>{plotFocusId=p.id;activePlotId=p.id;renderPlotWorkspace();requestAnimationFrame(()=>document.querySelector('.plot-node-editor[data-plot-id="'+p.id+'"]')?.focus());};list.appendChild(row);
+    const body=document.createElement('div');body.className='plot-search-body';const path=document.createElement('div');path.className='plot-search-path';path.textContent=plotPathText(p.id);const text=document.createElement('div');text.className='plot-search-text';text.textContent=p.text||'Untitled idea';body.append(path,text);row.appendChild(body);row.onclick=()=>plotRevealNode(p.id);list.appendChild(row);
   });
   canvas.appendChild(list);
 }
-function plotBreadcrumb(){const el=document.getElementById('plot-crumb');const path=plotFocusId?plotPathText(plotFocusId):'';el.textContent=path?'Story → '+path:'Story';}
+function plotRevealNode(id){
+  const p=plotIdea(id);if(!p)return;
+  activePlotId=id;
+  if(plotIsFiltered()){document.getElementById('plot-search').value='';document.getElementById('plot-tag-filter').value='';document.getElementById('plot-view-filter').value='all';}
+  if(plotView==='board'){
+    // Corkboard shows one level at a time — land on the level that contains
+    // the idea (its parent), so the target shows up as a card there.
+    plotFocusId=p.parentId??null;
+  }else{
+    plotAncestors(id).forEach(aid=>{if(aid!==id)plotCollapsed.delete(aid);});
+    plotFocusId=id;
+  }
+  renderPlotWorkspace();
+  requestAnimationFrame(()=>{
+    let node=null;
+    if(plotView==='board'){
+      node=document.querySelector('.plot-card[data-id="'+CSS.escape(id)+'"]');
+    }else{
+      const branch=document.querySelector('.plot-branch[data-id="'+CSS.escape(id)+'"]');
+      node=branch?.querySelector(':scope>.plot-node-row>.plot-node');
+    }
+    if(!node)return;
+    node.scrollIntoView({block:'center',behavior:'smooth'});
+    node.classList.add('plot-flash');
+    setTimeout(()=>node.classList.remove('plot-flash'),1200);
+  });
+}
+function plotBreadcrumb(){
+  const el=document.getElementById('plot-crumb');el.innerHTML='';
+  const home=document.createElement('button');home.type='button';home.className='plot-crumb-seg'+(plotFocusId?'':' current');home.textContent='Story';
+  home.onclick=()=>{if(!plotFocusId)return;plotFocusId=null;renderPlotWorkspace();};
+  el.appendChild(home);
+  if(plotFocusId){
+    plotAncestors(plotFocusId).forEach(aid=>{
+      const sep=document.createElement('span');sep.className='plot-crumb-sep';sep.textContent='›';el.appendChild(sep);
+      const seg=document.createElement('button');seg.type='button';const isCurrent=aid===plotFocusId;
+      seg.className='plot-crumb-seg'+(isCurrent?' current':'');
+      seg.textContent=(plotIdea(aid)?.text||'').trim()||'Untitled idea';
+      seg.title=seg.textContent;
+      seg.onclick=()=>{if(isCurrent)return;plotFocusId=aid;renderPlotWorkspace();};
+      el.appendChild(seg);
+    });
+  }
+}
+function setPlotView(v){
+  plotView=(v==='board'||v==='timeline')?v:'tree';
+  settings.plotView=plotView;saveSettings();
+  renderPlotWorkspace();
+}
+function updatePlotViewToggle(){
+  document.getElementById('plot-view-tree')?.classList.toggle('active',plotView==='tree');
+  document.getElementById('plot-view-board')?.classList.toggle('active',plotView==='board');
+  document.getElementById('plot-view-timeline')?.classList.toggle('active',plotView==='timeline');
+}
 function renderPlotWorkspace(){
   normalizePlotData();
   plotBreadcrumb();
+  updatePlotViewToggle();
+  document.getElementById('plot-workspace')?.classList.toggle('colors-active',plotColorsActive());
   const canvas=document.getElementById('plot-canvas');
   if(!canvas)return;
   canvas.innerHTML='';
   if(!plotIdeas.length){canvas.innerHTML='<div class="plot-empty"><h3>Start your story model</h3><p>Write an idea, press Enter for the next sibling, or Tab to make a child. Drag ideas to change their structure.</p><button class="plot-toolbar-btn" onclick="plotAdd(null,null)"><i class="ti ti-plus"></i> New idea</button></div>';return;}
   if(plotIsFiltered()){renderPlotSearchResults(canvas);return;}
+  if(plotView==='board'){renderPlotBoard(canvas);return;}
+  if(plotView==='timeline'){renderPlotTimeline(canvas);return;}
   const wrap=document.createElement('div');wrap.className='plot-root-list';plotRoots().forEach(p=>{const n=renderPlotNode(p,null);if(n)wrap.appendChild(n);});canvas.appendChild(wrap);
+}
+// ── Corkboard / index-card view ──
+// Shows one level at a time (the children of plotFocusId, or the roots when
+// plotFocusId is unset) as draggable cards. "Open" drills into a card's own
+// children as the next level; the breadcrumb above walks back out.
+function plotBoardItems(containerId){
+  if(containerId==null)return plotRoots();
+  const container=plotIdea(containerId);
+  if(!container)return plotRoots();
+  return container.children.map(cid=>plotIdea(cid)).filter(Boolean);
+}
+function plotBoardReorder(id,parentId,items,targetId,before){
+  const rest=items.filter(x=>x.id!==id);
+  let idx=rest.findIndex(x=>x.id===targetId);
+  if(idx<0)idx=rest.length;
+  plotMove(id,parentId,before?idx:idx+1);
+}
+function renderPlotBoard(canvas){
+  const containerId=(plotFocusId&&plotIdea(plotFocusId))?plotFocusId:null;
+  const items=plotBoardItems(containerId);
+  const wrap=document.createElement('div');wrap.className='plot-board-wrap';
+  const grid=document.createElement('div');grid.className='plot-board';
+  items.forEach(p=>grid.appendChild(renderPlotCard(p,items,containerId)));
+  const add=document.createElement('button');add.type='button';add.className='plot-card-add';add.innerHTML='<i class="ti ti-plus"></i> New card';
+  add.onclick=()=>plotAdd(containerId,items.length?items[items.length-1].id:null);
+  add.addEventListener('dragover',e=>{if(plotDragId==null)return;e.preventDefault();});
+  add.addEventListener('drop',e=>{e.preventDefault();if(plotDragId==null)return;if(plotDescendant(plotDragId,containerId))return;plotMove(plotDragId,containerId,items.filter(x=>x.id!==plotDragId).length);});
+  grid.appendChild(add);
+  wrap.appendChild(grid);
+  if(!items.length){const hint=document.createElement('div');hint.className='plot-empty';hint.style.margin='30px auto 0';hint.innerHTML='<p>No cards at this level yet.</p>';wrap.insertBefore(hint,grid);}
+  canvas.appendChild(wrap);
+}
+function renderPlotCard(p,items,parentId){
+  const card=document.createElement('div');card.className='plot-card'+(activePlotId===p.id?' selected':'');card.draggable=true;card.dataset.id=p.id;
+  plotApplyColorVar(card,p);
+  card.addEventListener('dragstart',e=>{plotDragId=p.id;card.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+  card.addEventListener('dragend',()=>{plotDragId=null;document.querySelectorAll('.plot-card').forEach(x=>x.classList.remove('dragging','drop-before','drop-after'));});
+  card.addEventListener('dragover',e=>{
+    if(plotDragId==null||plotDragId===p.id)return;e.preventDefault();
+    const r=card.getBoundingClientRect(),before=(e.clientX-r.left)<r.width/2;
+    card.classList.toggle('drop-before',before);card.classList.toggle('drop-after',!before);
+  });
+  card.addEventListener('dragleave',()=>card.classList.remove('drop-before','drop-after'));
+  card.addEventListener('drop',e=>{
+    e.preventDefault();const before=card.classList.contains('drop-before');card.classList.remove('drop-before','drop-after');
+    if(plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
+    plotBoardReorder(plotDragId,parentId,items,p.id,before);
+  });
+  const head=document.createElement('div');head.className='plot-card-head';
+  const idBtn=document.createElement('button');idBtn.type='button';idBtn.className='plot-ref-id';idBtn.title='Copy reference [['+p.id+']]';idBtn.textContent=p.id;idBtn.onclick=async e=>{e.stopPropagation();await copyPlotIdeaRef(p.id);};
+  const actions=document.createElement('div');actions.className='plot-card-actions';
+  const tagBtn=document.createElement('button');tagBtn.type='button';tagBtn.className='plot-icon-btn';tagBtn.title='Edit tags';tagBtn.innerHTML='<i class="ti ti-tag"></i>';tagBtn.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,tagBtn);};
+  const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='plot-icon-btn';delBtn.title='Delete idea and children';delBtn.innerHTML='<i class="ti ti-trash"></i>';delBtn.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(p.id,delBtn);};
+  actions.append(tagBtn,renderPlotColorBtn(p),delBtn);
+  head.append(idBtn,actions);
+  const ed=document.createElement('div');ed.className='plot-card-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write an idea…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot idea');
+  renderMarkdownInto(ed,p.text||'');
+  wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;document.querySelectorAll('.plot-card.selected').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');}});
+  card.addEventListener('click',e=>{if(e.target.closest('button,.plot-card-editor'))return;activePlotId=p.id;document.querySelectorAll('.plot-card.selected').forEach(x=>x.classList.remove('selected'));card.classList.add('selected');});
+  card.append(head,ed);
+  if(p.tags.length){const ts=document.createElement('div');ts.className='plot-card-tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});card.appendChild(ts);}
+  const footer=document.createElement('div');footer.className='plot-card-footer';
+  const openBtn=document.createElement('button');openBtn.type='button';openBtn.className='plot-card-open';
+  openBtn.innerHTML=p.children.length?'<i class="ti ti-layout-grid"></i> Open '+p.children.length+' card'+(p.children.length===1?'':'s'):'<i class="ti ti-corner-down-right"></i> Open';
+  openBtn.onclick=e=>{e.stopPropagation();plotFocusId=p.id;renderPlotWorkspace();};
+  footer.appendChild(openBtn);
+  card.appendChild(footer);
+  return card;
+}
+// ── Timeline / swimlane view ──
+// Root ideas double as storyline lanes; each lane's direct children are its
+// beats, laid out left-to-right in story order. Deeper nesting under a beat
+// isn't shown here — a beat with children gets an "N nested" link into the
+// corkboard drilled into it instead, rather than trying to flatten arbitrary
+// depth into a 2D grid.
+function renderPlotTimeline(canvas){
+  const lanes=plotRoots();
+  const wrap=document.createElement('div');wrap.className='plot-timeline';
+  if(!lanes.length){
+    const hint=document.createElement('div');hint.className='plot-empty';hint.innerHTML='<h3>No storylines yet</h3><p>Each top-level idea becomes a lane here; its children become beats placed along that lane.</p>';
+    wrap.appendChild(hint);
+  }
+  lanes.forEach(lane=>wrap.appendChild(renderPlotLane(lane)));
+  const addLane=document.createElement('button');addLane.type='button';addLane.className='plot-lane-add';addLane.innerHTML='<i class="ti ti-plus"></i> New storyline';
+  addLane.onclick=()=>plotAdd(null,lanes.length?lanes[lanes.length-1].id:null);
+  wrap.appendChild(addLane);
+  canvas.appendChild(wrap);
+}
+function renderPlotLane(lane){
+  const row=document.createElement('div');row.className='plot-lane';row.dataset.id=lane.id;
+  plotApplyColorVar(row,lane);
+  row.addEventListener('dragover',e=>{
+    if(plotDragMode!=='lane'||plotDragId==null||plotDragId===lane.id)return;
+    e.preventDefault();
+    const r=row.getBoundingClientRect(),before=(e.clientY-r.top)<r.height/2;
+    row.classList.toggle('drop-before',before);row.classList.toggle('drop-after',!before);
+  });
+  row.addEventListener('dragleave',e=>{if(!row.contains(e.relatedTarget))row.classList.remove('drop-before','drop-after');});
+  row.addEventListener('drop',e=>{
+    if(plotDragMode!=='lane')return;e.preventDefault();
+    const before=row.classList.contains('drop-before');row.classList.remove('drop-before','drop-after');
+    if(plotDragId==null||plotDragId===lane.id)return;
+    plotBoardReorder(plotDragId,null,plotRoots(),lane.id,before);
+  });
+  const head=document.createElement('div');head.className='plot-lane-head';
+  const grip=document.createElement('span');grip.className='plot-lane-grip';grip.title='Drag to reorder storylines';grip.innerHTML='<i class="ti ti-grip-vertical"></i>';grip.draggable=true;
+  grip.addEventListener('dragstart',e=>{plotDragId=lane.id;plotDragMode='lane';row.classList.add('dragging');e.dataTransfer.effectAllowed='move';});
+  grip.addEventListener('dragend',()=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-lane').forEach(x=>x.classList.remove('dragging','drop-before','drop-after'));});
+  const title=document.createElement('div');title.className='plot-lane-title';title.contentEditable='true';title.dataset.plotId=lane.id;title.dataset.placeholder='Name this storyline…';title.setAttribute('role','textbox');title.setAttribute('aria-label','Storyline name');
+  renderMarkdownInto(title,lane.text||'');
+  wireMdEditable(title,{get:()=>plotIdea(lane.id)?.text||'',set:v=>plotUpdateText(lane.id,v)},{onFocus:()=>{activePlotId=lane.id;},onKeydown:e=>{if(e.key==='Enter'){e.preventDefault();title.blur();}}});
+  const count=document.createElement('span');count.className='plot-lane-count';count.textContent=lane.children.length+' beat'+(lane.children.length===1?'':'s');
+  const actions=document.createElement('div');actions.className='plot-lane-actions';
+  actions.append(renderPlotColorBtn(lane));
+  const tagBtn=document.createElement('button');tagBtn.type='button';tagBtn.className='plot-icon-btn';tagBtn.title='Edit tags';tagBtn.innerHTML='<i class="ti ti-tag"></i>';tagBtn.onclick=e=>{e.stopPropagation();plotTagDialog(lane.id,tagBtn);};
+  actions.appendChild(tagBtn);
+  const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='plot-icon-btn';delBtn.title='Delete storyline and its beats';delBtn.innerHTML='<i class="ti ti-trash"></i>';delBtn.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(lane.id,delBtn);};
+  actions.appendChild(delBtn);
+  head.append(grip,title,count,actions);
+  const track=document.createElement('div');track.className='plot-lane-track';
+  const beats=lane.children.map(cid=>plotIdea(cid)).filter(Boolean);
+  track.addEventListener('dragover',e=>{if(plotDragMode!=='beat'||plotDragId==null||plotDescendant(plotDragId,lane.id))return;e.preventDefault();});
+  track.addEventListener('drop',e=>{
+    if(plotDragMode!=='beat'||e.target!==track)return;e.preventDefault();
+    if(plotDragId==null||plotDescendant(plotDragId,lane.id))return;
+    plotMove(plotDragId,lane.id,beats.filter(b=>b.id!==plotDragId).length);
+  });
+  beats.forEach(b=>track.appendChild(renderPlotBeat(b,beats,lane.id)));
+  const addBeat=document.createElement('button');addBeat.type='button';addBeat.className='plot-beat-add';addBeat.innerHTML='<i class="ti ti-plus"></i> Beat';
+  addBeat.onclick=()=>plotAdd(lane.id,beats.length?beats[beats.length-1].id:null);
+  track.appendChild(addBeat);
+  row.append(head,track);
+  return row;
+}
+function renderPlotBeat(p,items,laneId){
+  const beat=document.createElement('div');beat.className='plot-beat'+(activePlotId===p.id?' selected':'');beat.draggable=true;beat.dataset.id=p.id;
+  plotApplyColorVar(beat,p);
+  beat.addEventListener('dragstart',e=>{plotDragId=p.id;plotDragMode='beat';beat.classList.add('dragging');e.dataTransfer.effectAllowed='move';e.stopPropagation();});
+  beat.addEventListener('dragend',()=>{plotDragId=null;plotDragMode=null;document.querySelectorAll('.plot-beat').forEach(x=>x.classList.remove('dragging','drop-before','drop-after'));});
+  beat.addEventListener('dragover',e=>{
+    if(plotDragMode!=='beat'||plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
+    e.preventDefault();e.stopPropagation();
+    const r=beat.getBoundingClientRect(),before=(e.clientX-r.left)<r.width/2;
+    beat.classList.toggle('drop-before',before);beat.classList.toggle('drop-after',!before);
+  });
+  beat.addEventListener('dragleave',()=>beat.classList.remove('drop-before','drop-after'));
+  beat.addEventListener('drop',e=>{
+    if(plotDragMode!=='beat')return;
+    e.preventDefault();e.stopPropagation();
+    const before=beat.classList.contains('drop-before');beat.classList.remove('drop-before','drop-after');
+    if(plotDragId==null||plotDragId===p.id||plotDescendant(plotDragId,p.id))return;
+    plotBoardReorder(plotDragId,laneId,items,p.id,before);
+  });
+  const head=document.createElement('div');head.className='plot-beat-head';
+  const idBtn=document.createElement('button');idBtn.type='button';idBtn.className='plot-ref-id';idBtn.title='Copy reference [['+p.id+']]';idBtn.textContent=p.id;idBtn.onclick=async e=>{e.stopPropagation();await copyPlotIdeaRef(p.id);};
+  const actions=document.createElement('div');actions.className='plot-beat-actions';
+  const tagBtn=document.createElement('button');tagBtn.type='button';tagBtn.className='plot-icon-btn';tagBtn.title='Edit tags';tagBtn.innerHTML='<i class="ti ti-tag"></i>';tagBtn.onclick=e=>{e.stopPropagation();plotTagDialog(p.id,tagBtn);};
+  const delBtn=document.createElement('button');delBtn.type='button';delBtn.className='plot-icon-btn';delBtn.title='Delete idea and children';delBtn.innerHTML='<i class="ti ti-trash"></i>';delBtn.onclick=e=>{e.preventDefault();e.stopPropagation();plotDeleteWithConfirm(p.id,delBtn);};
+  actions.append(tagBtn,renderPlotColorBtn(p),delBtn);
+  head.append(idBtn,actions);
+  const ed=document.createElement('div');ed.className='plot-beat-editor';ed.contentEditable='true';ed.dataset.plotId=p.id;ed.dataset.placeholder='Write a beat…';ed.setAttribute('role','textbox');ed.setAttribute('aria-label','Plot beat');
+  renderMarkdownInto(ed,p.text||'');
+  wireMdEditable(ed,{get:()=>plotIdea(p.id)?.text||'',set:v=>plotUpdateText(p.id,v)},{onFocus:()=>{activePlotId=p.id;document.querySelectorAll('.plot-beat.selected').forEach(x=>x.classList.remove('selected'));beat.classList.add('selected');}});
+  beat.addEventListener('click',e=>{if(e.target.closest('button,.plot-beat-editor'))return;activePlotId=p.id;document.querySelectorAll('.plot-beat.selected').forEach(x=>x.classList.remove('selected'));beat.classList.add('selected');});
+  beat.append(head,ed);
+  if(p.tags.length){const ts=document.createElement('div');ts.className='plot-card-tags';p.tags.forEach(t=>{const s=document.createElement('span');s.className='plot-tag';s.textContent=t;ts.appendChild(s);});beat.appendChild(ts);}
+  if(p.children.length){const more=document.createElement('button');more.type='button';more.className='plot-beat-more';more.textContent=p.children.length+' nested idea'+(p.children.length===1?'':'s')+' →';more.onclick=e=>{e.stopPropagation();setPlotView('board');plotFocusId=p.id;renderPlotWorkspace();};beat.appendChild(more);}
+  return beat;
 }
 function openPlotWorkspace(){normalizePlotData();if(activePlotId&&!plotIdea(activePlotId))activePlotId=null;if(plotFocusId&&!plotIdea(plotFocusId))plotFocusId=null;document.getElementById('plot-workspace').classList.add('open');document.getElementById('plot-workspace').setAttribute('aria-hidden','false');renderPlotWorkspace();}
 function closePlotWorkspace(){closePlotDialog();document.getElementById('plot-workspace').classList.remove('open');document.getElementById('plot-workspace').setAttribute('aria-hidden','true');}
@@ -1466,6 +1843,7 @@ function clearPlotFilters(){document.getElementById('plot-search').value='';docu
 
 function init(){
   loadSettings();
+  plotView=(settings.plotView==='board'||settings.plotView==='timeline')?settings.plotView:'tree';
   const saved=localStorage.getItem('nw-collections');
   if(saved){
     try{
@@ -1950,7 +2328,7 @@ function wireMdEditable(el,getSet,opts){
   });
   el.addEventListener('click',e=>{
     const link=e.target.closest('.md-link');
-    if(link&&(e.metaKey||e.ctrlKey)){e.preventDefault();const target=link.dataset.target;const pp=plotIdeas.find(p=>(p.text||'').trim()===target);if(pp){plotFocusId=pp.id;activePlotId=pp.id;openPlotWorkspace();}else openOrCreateChapterEntry(target);}
+    if(link&&(e.metaKey||e.ctrlKey)){e.preventDefault();const target=link.dataset.target;const pp=plotIdea(target);if(pp){openPlotWorkspace();plotRevealNode(pp.id);}else openOrCreateChapterEntry(target);}
   });
   el.addEventListener('keydown',e=>{
     if(wikilinkAcOpen()){
