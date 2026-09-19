@@ -39,7 +39,6 @@
       <button class="side-btn" id="backup-status-btn" onclick="handleBackupClick()" title="Local backup status">
         <span class="icon-badge-wrap"><i class="ti ti-device-floppy" id="backup-status-icon"></i><span class="save-dot" id="save-status-dot" title="Unsaved changes"></span></span><span class="side-label hide-collapsed" id="backup-status-label">Checking backup…</span>
       </button>
-      
       <button class="side-btn" onclick="openPlotWorkspace()"><i class="ti ti-bulb"></i><span class="side-label hide-collapsed">Plot Workspace</span></button>
       <button class="side-btn" id="export-menu-btn" onclick="toggleExportMenu(event)"><i class="ti ti-package-export"></i><span class="side-label hide-collapsed">Export…</span></button>
       <button class="side-btn" onclick="importJson()"><i class="ti ti-upload"></i><span class="side-label hide-collapsed">Import .json</span></button>
@@ -49,7 +48,6 @@
       <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImageFile(event)">
     </div>
   </aside>
-
   <main id="main">
     <div id="topbar">
       <button id="mobile-menu-btn" title="Menu" onclick="openMobileSidebar()"><i class="ti ti-menu-2"></i></button>
@@ -117,8 +115,6 @@
     </div>
   </main>
 </div>
-
-
 <div id="plot-workspace" aria-hidden="true">
   <div id="plot-toolbar">
     <strong id="plot-title">Plot Workspace</strong>
@@ -144,7 +140,25 @@
   </div>
   <div id="plot-canvas"></div>
 </div>
-<!-- Type picker -->
+<div id="search-overlay" aria-hidden="true">
+  <div id="search-dialog" role="dialog" aria-modal="true" aria-labelledby="search-title">
+    <div id="search-head">
+      <div>
+        <div id="search-title">Search</div>
+        <div id="search-subtitle">Chapters, blocks, and plot ideas</div>
+      </div>
+      <button id="search-close" type="button" title="Close search" onclick="closeGlobalSearch()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="search-input-wrap">
+      <i class="ti ti-search"></i>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Search your story…" aria-label="Search your story"
+             oninput="onGlobalSearchInput()" onkeydown="handleGlobalSearchKeydown(event)">
+      <kbd>Esc</kbd>
+    </div>
+    <div id="search-results" role="listbox" aria-label="Search results"></div>
+  </div>
+</div>
 <div id="type-picker">
   <button class="type-opt" onclick="changeType('prose')"><span class="type-dot" style="background:var(--prose-accent)"></span>Prose</button>
   <button class="type-opt" onclick="changeType('dialogue')"><span class="type-dot" style="background:var(--dialogue-accent)"></span>Dialogue</button>
@@ -156,8 +170,6 @@
   <button class="type-opt" onclick="changeType('custom')"><span class="type-dot" style="background:#999"></span>Custom</button>
   <button class="type-opt" onclick="changeType('group')"><span class="type-dot" style="background:var(--border2)"></span>Group header</button>
 </div>
-
-<!-- Export menu -->
 <div id="export-menu">
   <div class="export-section-title">Scope</div>
   <div style="display:flex;gap:4px;padding:2px 6px 6px;">
@@ -184,11 +196,7 @@
     <span><span>PDF <span style="font-size:10px;opacity:0.6">coming soon</span></span><span class="export-opt-sub">Formatted document</span></span>
   </button>
 </div>
-
-<!-- Color picker for custom blocks -->
 <div id="color-picker-popup"></div>
-
-<!-- Settings panel -->
 <div id="settings-panel">
   <div class="setting-group">
     <div class="setting-label">Font size</div>
@@ -228,8 +236,6 @@
     </div>
   </div>
 </div>
-
-<!-- Eyes -->
 <div id="eye-widget" style="position:fixed;left:0;top:0;pointer-events:none;z-index:50;display:flex;flex-direction:row;gap:5px;transition:top 0.35s cubic-bezier(0.34,1.26,0.64,1),opacity 0.3s;">
   <svg class="nw-eye" width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="transform-origin:50% 50%;overflow:visible;">
     <defs><clipPath id="ec1"><circle cx="50" cy="50" r="36"/></clipPath></defs>
@@ -248,10 +254,8 @@
     </g>
   </svg>
 </div>
-
 <div id="wikilink-ac"></div>
 <div id="tag-ac"></div>
-
 <div id="confirm-popup">
   <div id="confirm-msg">Are you sure?</div>
   <div id="confirm-btns">
@@ -267,7 +271,7 @@
   <button onclick="dismissBackupNudge(true)">Later</button>
   <button class="bn-close" onclick="dismissBackupNudge(false)" title="Dismiss"><i class="ti ti-x"></i></button>
 </div>
-
+<script src="js/search.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

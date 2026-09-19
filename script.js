@@ -1,4 +1,3 @@
-// ── Constants ──
 const TYPE_COLORS  = {prose:'#378ADD',dialogue:'#D85A30',action:'#639922',thought:'#7F77DD',scene:'#D4537E',image:'#C0A86B',custom:'#999999',group:'#bbbbbb'};
 const TYPE_LABELS  = {prose:'prose',dialogue:'dialogue',action:'action',thought:'thought',scene:'scene meta',image:'image',custom:'custom',group:'group'};
 const PLACEHOLDERS = {prose:'Begin writing prose...',dialogue:'"Character speaks..."',action:'A character does something.',thought:'A character thinks...',scene:'Scene / Chapter heading',image:'',custom:'Write here...',group:''};
@@ -16,8 +15,6 @@ function chapterType(ch){return CHAPTER_TYPES.includes(ch&&ch.type)?ch.type:'cha
 function chapterTypeLabel(ch){return chapterType(ch)==='custom'?(ch&&ch.customType||'Custom type'):CHAPTER_TYPE_LABELS[chapterType(ch)];}
 function chapterAliases(ch){return Array.isArray(ch&&ch.aliases)?ch.aliases:[];}
 function chapterTags(ch){return Array.isArray(ch&&ch.tags)?ch.tags:[];}
-
-// ── State ──
 let collections=[], activeChapterId=null, activeCollId=null;
 let nextCollId=0, nextChapterId=0, nextBlockId=0;
 let acItems=[], acSel=0, acAnchorEl=null, acStart=null, acQuery='';
@@ -26,31 +23,75 @@ let pickerTargetId=null, saveTimer=null;
 let dragId=null, dragOverIndex=null;
 let chapDragId=null, chapDragOverIndex=null, chapDragCollId=null;
 let settings={fontSize:17,width:'medium',lineHeight:'normal',eyes:true,eyeOrientation:'vertical',plotView:'tree'};
-let pendingImageBlockId=null; // which block is waiting for file input
+let pendingImageBlockId=null;
 let plotIdeas=[],activePlotId=null,plotFocusId=null,plotCollapsed=new Set(),plotDragId=null,plotDragMode=null;
 let plotView='tree';
-// ── Undo / redo ──
-// Whole-state snapshots, kept in memory only (never persisted to localStorage
-// or exported files, so they can never bloat saved/exported file size).
-// The array is hard-capped so memory use can't grow without bound either —
-// the oldest snapshot is dropped whenever a new one would exceed the cap.
 let undoStack=[],redoStack=[];
 const UNDO_LIMIT=50;
 let applyingUndo=false;
 let textEditOpen=false,textEditTimer=null;
-
-// ── Helpers ──
+const VIRTUALIZE_THRESHOLD=60;
+const VIRTUALIZE_BUFFER_PX=1400;
+const DEFAULT_BLOCK_HEIGHT={prose:120,dialogue:70,action:50,thought:70,scene:46,image:320,custom:90,group:34};
+let blockHeights=new Map();
+let blockDom=new Map();
+let renderedChapterId;
+let vwin={start:0,end:0};
+let virtualTopSpacer=null,virtualBottomSpacer=null,virtualTrailingDz=null;
+let dragForceFullWindow=false;
+let scrollReflowQueued=false;
+function estimatedHeight(b){return blockHeights.get(b.id)??(DEFAULT_BLOCK_HEIGHT[b.type]||90);}
+function recordHeight(id,h){if(h>0)blockHeights.set(id,h);}
+function sumHeights(bs,from,to){let s=0;for(let i=from;i<to;i++)s+=estimatedHeight(bs[i]);return s;}
+function computeVirtualWindow(bs){
+  const writingArea=document.getElementById('writing-area');
+  const n=bs.length;
+  if(!writingArea)return[0,n];
+  const viewportH=writingArea.clientHeight||600;
+  let scrolledIntoList=0;
+  if(virtualTopSpacer&&virtualTopSpacer.isConnected){
+    const waRect=writingArea.getBoundingClientRect();
+    const tsRect=virtualTopSpacer.getBoundingClientRect();
+    scrolledIntoList=Math.max(0,waRect.top-tsRect.top);
+  }
+  const from=scrolledIntoList-VIRTUALIZE_BUFFER_PX;
+  const to=scrolledIntoList+viewportH+VIRTUALIZE_BUFFER_PX;
+  let acc=0,start=0,end=n,foundStart=false;
+  for(let i=0;i<n;i++){
+    const h=estimatedHeight(bs[i]);
+    if(!foundStart&&acc+h>=Math.max(0,from)){start=i;foundStart=true;}
+    acc+=h;
+    if(acc>=to){end=i+1;break;}
+  }
+  if(!foundStart)start=Math.max(0,n-1);
+  start=Math.max(0,start-1);end=Math.min(n,end+1);
+  return[start,end];
+}
+function initVirtualScroll(){
+  const writingArea=document.getElementById('writing-area');
+  if(!writingArea)return;
+  writingArea.addEventListener('scroll',()=>{
+    if(scrollReflowQueued)return;
+    scrollReflowQueued=true;
+    requestAnimationFrame(()=>{
+      scrollReflowQueued=false;
+      const bs=blocks();
+      if(dragForceFullWindow||bs.length<=VIRTUALIZE_THRESHOLD)return;
+      const[s,e]=computeVirtualWindow(bs);
+      if(s!==vwin.start||e!==vwin.end)renderBlocksVirtualized();
+    });
+  },{passive:true});
+}
 function allChapters(){return collections.flatMap(c=>c.chapters);}
 function activeChapter(){return allChapters().find(ch=>ch.id===activeChapterId);}
 function activeCollection(){return collections.find(c=>c.id===activeCollId);}
 function findChapterCollection(chapId){return collections.find(c=>c.chapters.some(ch=>ch.id===chapId));}
 function blocks(){const ch=activeChapter();return ch?ch.blocks:[];}
 function save(){
-  localStorage.setItem('nw-collections',JSON.stringify(collections));
   localStorage.setItem('nw-active-ch',activeChapterId);
   localStorage.setItem('nw-active-coll',activeCollId);
   localStorage.setItem('nw-name',document.getElementById('project-name').value);
-  localStorage.setItem('nw-plot-ideas',JSON.stringify(plotIdeas));
+  persistProjectData();
   mirrorToLocalFile();
   markSaved();
 }
@@ -59,9 +100,7 @@ function scheduleSave(){
   if(!localBackupSupported)editsSinceExport++;
   markStale();
 }
-
-// ── Save status (stale/saved indicator) ──
-let saveStatus='saved'; // 'saved'|'stale' — whether the in-browser save has caught up with the latest edit
+let saveStatus='saved';
 function markStale(){
   if(saveStatus==='stale')return;
   saveStatus='stale';
@@ -79,8 +118,6 @@ function updateSaveStatusUI(){
   }
   applyBackupTitle();
 }
-// Ctrl/Cmd+S: flush the debounced save immediately instead of waiting ~800ms,
-// and warn when there's nowhere on disk for it to actually land.
 function manualSave(){
   clearTimeout(saveTimer);
   save();
@@ -94,22 +131,10 @@ function manualSave(){
     toast('Saved in this browser \u2014 no local backup file connected');
   }
 }
-
-// ── Storage strategy: protection against data loss ──
-// Chrome/Edge (File System Access API available): writes are mirrored to a
-// local file on disk the user picks once. The handle itself is reusable
-// across reloads (stored in IndexedDB — handles are structured-cloneable),
-// but browsers require a fresh user gesture to re-grant write permission
-// each session, so a "Reconnect" click is needed once per session rather
-// than a full re-pick of the file.
-// Firefox/Safari (no File System Access API): nothing can write outside the
-// browser sandbox, so instead we nudge the user to export a .json now and
-// then, since that's the only thing that survives a cache clear there.
 const localBackupSupported=!!(window.showSaveFilePicker);
 let localBackupHandle=null;
-let localBackupStatus=localBackupSupported?'checking':'unsupported'; // checking|disconnected|reconnect|connected|unsupported
+let localBackupStatus=localBackupSupported?'checking':'unsupported';
 let localBackupWriting=false,localBackupPending=false;
-
 const NW_IDB_NAME='nw-fs-handles',NW_IDB_STORE='handles';
 function idbOpen(){
   return new Promise((resolve,reject)=>{
@@ -143,7 +168,92 @@ async function idbDel(key){
     tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);
   });
 }
-
+const NW_DATA_DB='nw-appdata',NW_DATA_STORE='kv';
+const IDB_AVAILABLE=(()=>{try{return typeof indexedDB!=='undefined'&&indexedDB!==null;}catch(e){return false;}})();
+let dataStoreBackend=IDB_AVAILABLE?'idb':'localStorage';
+function dataIdbOpen(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(NW_DATA_DB,1);
+    req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(NW_DATA_STORE))req.result.createObjectStore(NW_DATA_STORE);};
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+}
+async function dataIdbSet(key,val){
+  try{
+    const db=await dataIdbOpen();
+    return await new Promise((resolve,reject)=>{
+      const tx=db.transaction(NW_DATA_STORE,'readwrite');
+      tx.objectStore(NW_DATA_STORE).put(val,key);
+      tx.oncomplete=()=>resolve(true);tx.onerror=()=>reject(tx.error);
+    });
+  }catch(e){return false;}
+}
+async function dataIdbGet(key){
+  const db=await dataIdbOpen();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(NW_DATA_STORE,'readonly');
+    const req=tx.objectStore(NW_DATA_STORE).get(key);
+    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  });
+}
+let persistChain=Promise.resolve();
+function persistProjectData(){
+  const collectionsJson=JSON.stringify(collections);
+  const plotIdeasJson=JSON.stringify(plotIdeas);
+  persistChain=persistChain.then(async()=>{
+    if(dataStoreBackend==='idb'){
+      const[ok1,ok2]=await Promise.all([dataIdbSet('nw-collections',collectionsJson),dataIdbSet('nw-plot-ideas',plotIdeasJson)]);
+      if(ok1&&ok2)return;
+      dataStoreBackend='localStorage';
+    }
+    try{
+      localStorage.setItem('nw-collections',collectionsJson);
+      localStorage.setItem('nw-plot-ideas',plotIdeasJson);
+    }catch(e){
+      toast('Could not save — local storage is full. Export a .json backup now.');
+    }
+  });
+}
+async function loadProjectData(){
+  let collectionsJson=null,plotIdeasJson=null;
+  if(dataStoreBackend==='idb'){
+    try{
+      const[c,p]=await Promise.all([dataIdbGet('nw-collections'),dataIdbGet('nw-plot-ideas')]);
+      collectionsJson=c||null;plotIdeasJson=p||null;
+      if(collectionsJson==null){
+        const legacy=localStorage.getItem('nw-collections');
+        if(legacy){
+          collectionsJson=legacy;
+          plotIdeasJson=localStorage.getItem('nw-plot-ideas')||'[]';
+          const[ok1,ok2]=await Promise.all([dataIdbSet('nw-collections',legacy),dataIdbSet('nw-plot-ideas',plotIdeasJson)]);
+          if(ok1&&ok2){localStorage.removeItem('nw-collections');localStorage.removeItem('nw-plot-ideas');}
+        }
+      }
+    }catch(e){dataStoreBackend='localStorage';}
+  }
+  if(dataStoreBackend==='localStorage'){
+    collectionsJson=collectionsJson||localStorage.getItem('nw-collections');
+    plotIdeasJson=plotIdeasJson||localStorage.getItem('nw-plot-ideas');
+  }
+  if(collectionsJson){
+    try{
+      collections=JSON.parse(collectionsJson);
+      normalizeProjectData();
+      nextCollId=Math.max(...collections.map(c=>c.id),-1)+1;
+      nextChapterId=Math.max(...allChapters().map(ch=>ch.id),-1)+1;
+      nextBlockId=Math.max(...allChapters().flatMap(ch=>(ch.blocks||[]).map(b=>b.id)),-1)+1;
+      activeChapterId=parseInt(localStorage.getItem('nw-active-ch'),10);
+      activeCollId=parseInt(localStorage.getItem('nw-active-coll'),10);
+      if(!allChapters().some(ch=>ch.id===activeChapterId))activeChapterId=allChapters()[0]?.id??null;
+      if(!collections.some(c=>c.id===activeCollId))activeCollId=findChapterCollection(activeChapterId)?.id??collections[0]?.id??null;
+      if(!allChapters().length)loadSample();
+    }catch(e){loadSample();}
+  }else{loadSample();}
+  if(plotIdeasJson){try{plotIdeas=JSON.parse(plotIdeasJson)||[];}catch(e){plotIdeas=[];}}
+  normalizePlotData();
+  normalizeProjectData();
+}
 async function initLocalBackup(){
   if(!localBackupSupported){updateBackupUI();return;}
   try{
@@ -153,7 +263,7 @@ async function initLocalBackup(){
     const perm=await handle.queryPermission({mode:'readwrite'});
     if(perm==='granted'){
       localBackupStatus='connected';updateBackupUI();
-      mirrorToLocalFile(); // catch up in case anything changed since last session
+      mirrorToLocalFile();
     }else{
       localBackupStatus='reconnect';updateBackupUI();
     }
@@ -162,7 +272,6 @@ async function initLocalBackup(){
     localBackupStatus='disconnected';updateBackupUI();
   }
 }
-
 async function connectLocalBackup(){
   if(!localBackupSupported)return;
   try{
@@ -180,7 +289,6 @@ async function connectLocalBackup(){
     if(e.name!=='AbortError'){toast('Could not connect a backup file');console.error(e);}
   }
 }
-
 async function reconnectLocalBackup(){
   if(!localBackupHandle)return;
   try{
@@ -194,7 +302,6 @@ async function reconnectLocalBackup(){
     }
   }catch(e){toast('Could not reconnect the backup file');console.error(e);}
 }
-
 function disconnectLocalBackup(){
   appConfirm('Stop mirroring writes to the local backup file? Your work stays saved in this browser either way.','Disconnect',async()=>{
     localBackupHandle=null;
@@ -204,7 +311,6 @@ function disconnectLocalBackup(){
     toast('Local backup disconnected');
   });
 }
-
 async function mirrorToLocalFile(){
   if(!localBackupSupported||localBackupStatus!=='connected'||!localBackupHandle)return;
   if(localBackupWriting){localBackupPending=true;return;}
@@ -217,8 +323,6 @@ async function mirrorToLocalFile(){
     await writable.close();
   }catch(e){
     console.error('Local backup write failed',e);
-    // Permission revoked, file moved/deleted, etc. — surface it rather than
-    // silently failing to protect data.
     localBackupStatus='reconnect';updateBackupUI();
     toast('Local backup write failed \u2014 reconnect needed');
   }finally{
@@ -226,7 +330,6 @@ async function mirrorToLocalFile(){
     if(localBackupPending){localBackupPending=false;mirrorToLocalFile();}
   }
 }
-
 let backupBaseTitle='';
 function updateBackupUI(){
   const btn=document.getElementById('backup-status-btn');
@@ -259,15 +362,12 @@ function updateBackupUI(){
   }
   applyBackupTitle();
 }
-// Composes the connection-status title (above) with the stale/saved suffix
-// (from updateSaveStatusUI) so neither overwrites the other.
 function applyBackupTitle(){
   const btn=document.getElementById('backup-status-btn');
   if(!btn||!backupBaseTitle)return;
   const suffix=saveStatus==='stale'?' \u2014 unsaved changes':' \u2014 all changes saved';
   btn.title=backupBaseTitle+suffix;
 }
-
 function handleBackupClick(){
   if(localBackupStatus==='unsupported'){
     toast('Auto-backup isn\u2019t available here \u2014 exporting .json instead');
@@ -277,11 +377,6 @@ function handleBackupClick(){
   if(localBackupStatus==='reconnect')return reconnectLocalBackup();
   if(localBackupStatus==='connected')return disconnectLocalBackup();
 }
-
-// ── Firefox/Safari fallback: proactive backup nudges ──
-// No File System Access API means nothing here can write outside the
-// browser's own storage, so localStorage alone is one cache-clear away from
-// losing everything. Instead, nudge toward periodic manual .json exports.
 let editsSinceExport=0,nudgeDismissedThisSession=false,backupNudgeTimer=null;
 const NUDGE_CHECK_MS=60*1000,NUDGE_IDLE_THRESHOLD_MS=15*60*1000,NUDGE_MIN_EDITS=8;
 function startBackupNudgeWatcher(){
@@ -310,11 +405,6 @@ function markBackupExported(){
   localStorage.setItem('nw-last-export-at',String(Date.now()));
   editsSinceExport=0;
 }
-
-// ── Undo / redo core ──
-// Whole-document snapshots. Cheap because the doc already round-trips
-// cleanly through plain JS objects (see doExport) — no per-op inverse
-// functions to write or maintain.
 function snapshotState(){
   return{
     collections:JSON.parse(JSON.stringify(collections)),
@@ -323,8 +413,26 @@ function snapshotState(){
     projectName:document.getElementById('project-name').value
   };
 }
+function invalidateBlockDomCache(){
+  for(const entry of blockDom.values()){
+    entry.ro&&entry.ro.disconnect();
+    entry.wrap.remove();
+    entry.dz.remove();
+  }
+  blockDom.clear();
+  virtualTopSpacer=null;
+  virtualBottomSpacer=null;
+  if(virtualTrailingDz){virtualTrailingDz.remove();virtualTrailingDz=null;}
+  vwin={start:0,end:0};
+}
 function restoreSnapshot(snap){
   applyingUndo=true;
+  // History replaces the entire model with cloned objects. Any cached block
+  // DOM is therefore stale (its event handlers close over the old block
+  // objects), even when the active chapter id is unchanged. Invalidate the
+  // virtualization cache before rendering so undo/redo cannot resurrect or
+  // edit pre-history state.
+  invalidateBlockDomCache();
   collections=JSON.parse(JSON.stringify(snap.collections||[]));
   plotIdeas=JSON.parse(JSON.stringify(snap.plotIdeas||[]));
   normalizeProjectData();
@@ -344,8 +452,6 @@ function restoreSnapshot(snap){
   save();
   applyingUndo=false;
 }
-// Force an undo boundary right before a discrete (non-typing) mutation —
-// add/delete/reorder block or chapter, type/color changes, tag edits, etc.
 function pushUndoSnapshot(){
   if(applyingUndo)return;
   textEditOpen=false;clearTimeout(textEditTimer);
@@ -353,9 +459,6 @@ function pushUndoSnapshot(){
   if(undoStack.length>UNDO_LIMIT)undoStack.shift();
   redoStack=[];
 }
-// Coalesced boundary for continuous typing: one undo step per ~1s pause,
-// not per keystroke. Call this BEFORE the keystroke is applied to the data
-// model so the pushed snapshot reflects the pre-edit state.
 function noteTextEdit(){
   if(applyingUndo)return;
   if(!textEditOpen){
@@ -385,9 +488,6 @@ function performRedo(){
   restoreSnapshot(snap);
   toast('Redo');
 }
-
-// Wiki-links resolve against chapters in every collection. Collections remain the
-// only grouping model; there is no separate Codex collection or migration layer.
 function resolveLinkTarget(name){
   const n=(name||'').trim();
   if(!n)return null;
@@ -395,7 +495,6 @@ function resolveLinkTarget(name){
   if(plot)return{...plot,_plot:true};
   return allChapters().find(ch=>ch.name.toLowerCase()===n.toLowerCase()||(ch.aliases||[]).some(a=>a.toLowerCase()===n.toLowerCase()));
 }
-
 // ── Init ──
 function normalizeProjectData(){
   if(!Array.isArray(collections))collections=[];
@@ -422,8 +521,6 @@ function normalizeProjectData(){
     });
   });
 }
-
-
 function makePlotId(){
   const used=new Set(plotIdeas.map(p=>String(p&&p.id||'')));
   // Reuse the lowest available Plot Idea slot so deleted IDs become available again.
@@ -437,7 +534,6 @@ function makePlotId(){
 function normalizePlotData(){
   if(!Array.isArray(plotIdeas))plotIdeas=[];
   const oldToNew=new Map(),used=new Set();
-  // Convert legacy numeric IDs to short, language-safe Plot Idea IDs.
   plotIdeas.forEach((p,i)=>{
     if(!p||typeof p!=='object')return;
     const old=p.id;
@@ -460,10 +556,8 @@ function normalizePlotData(){
     p.links=Array.isArray(p.links)?p.links.filter(x=>typeof x==='string'):[];
     if(typeof p.text!=='string')p.text='';
     p.color=(typeof p.color==='string'&&(PLOT_COLOR_HEX[p.color]||/^#([0-9a-f]{3}){1,2}$/i.test(p.color)))?p.color.toLowerCase():null;
-    // Keep links as the contents of [[...]]; Plot Ideas use their short ID.
     p.links=[...new Set(p.links.map(x=>oldToNew.get(String(x))||String(x).trim()).filter(Boolean))];
   });
-  // Parent/child is authoritative; preserve existing sibling order.
   plotIdeas.forEach(p=>{
     if(p.parentId!=null){const par=plotIdea(p.parentId);if(par&&!par.children.includes(p.id))par.children.push(p.id);}
   });
@@ -558,10 +652,6 @@ function plotColorDialog(id,anchor){
     const b=document.createElement('button');b.type='button';b.className='plot-color-swatch'+(p.color===c.id?' active':'');b.style.background=c.hex;b.title=c.id;b.setAttribute('aria-label',c.id);b.onclick=()=>pick(c.id);
     grid.appendChild(b);
   });
-  // Custom colors — the same swatches available to custom text blocks in the
-  // manuscript, plus any custom hex already chosen on other ideas, so a
-  // custom color stays reusable/consistent across the project rather than
-  // being a one-off pick each time.
   const customPool=[...new Set([...CUSTOM_COLORS.map(c=>c.toLowerCase()),...plotUsedCustomColors()])];
   customPool.forEach(hex=>{
     const b=document.createElement('button');b.type='button';b.className='plot-color-swatch'+(typeof p.color==='string'&&p.color.toLowerCase()===hex?' active':'');b.style.background=hex;b.title=hex;b.setAttribute('aria-label','Custom color '+hex);b.onclick=()=>pick(hex);
@@ -608,9 +698,6 @@ function plotTagDialog(id,anchor){
   d.appendChild(input);const help=document.createElement('div');help.className='plot-tag-editor-help';help.textContent='Press Enter to add a tag.';d.appendChild(help);
   document.body.appendChild(d);positionPlotPopover(d,anchor);input.focus();
 }
-// Refreshes just the chip row inside an already-open tag dialog, without
-// rebuilding the input (which would drop focus and any autocomplete state
-// mid-type — see plotTagDialog's `pick`).
 function renderPlotTagChips(id){
   const d=document.getElementById('plot-tag-editor');if(!d)return;
   const p=plotIdea(id);if(!p)return;
@@ -741,10 +828,6 @@ function renderPlotNode(p,visible){
   const gutter=document.createElement('div');gutter.className='plot-gutter';
   if(p.children.length){const c=document.createElement('button');c.className='plot-icon-btn';c.title=plotCollapsed.has(p.id)?'Expand children':'Collapse children';c.innerHTML='<i class="ti '+(plotCollapsed.has(p.id)?'ti-chevron-right':'ti-chevron-down')+'"></i>';c.onclick=e=>{e.stopPropagation();plotCollapsed.has(p.id)?plotCollapsed.delete(p.id):plotCollapsed.add(p.id);renderPlotWorkspace();};gutter.appendChild(c);}
   const ref=document.createElement('button');ref.className='plot-ref-id';ref.type='button';ref.title='Copy reference [['+p.id+']]';ref.textContent=p.id;ref.onclick=async e=>{e.stopPropagation();await copyPlotIdeaRef(p.id);};gutter.appendChild(ref);
-  // Action buttons live in their own small grid (like the scene-block gutter)
-  // rather than a single row, and dragging is scoped to the grip handle only —
-  // dragging used to be enabled on the whole node, which hijacked normal
-  // text-selection drags inside the editor.
   const grid=document.createElement('div');grid.className='plot-gutter-grid';
   const grip=document.createElement('button');grip.type='button';grip.className='plot-grip-btn';grip.title='Drag to reorder';grip.setAttribute('aria-label','Drag to reorder this idea');grip.innerHTML='<i class="ti ti-grip-vertical"></i>';grip.draggable=true;
   grip.addEventListener('click',e=>e.stopPropagation());
@@ -790,9 +873,6 @@ function plotRevealNode(id){
   activePlotId=id;
   if(plotIsFiltered()){document.getElementById('plot-search').value='';document.getElementById('plot-tag-filter').value='';document.getElementById('plot-view-filter').value='all';}
   if(plotView==='board'||plotView==='timeline'){
-    // Corkboard and timeline both show one level at a time — land on the
-    // level that contains the idea (its parent), so the target shows up as
-    // a card or a lane there.
     plotFocusId=p.parentId??null;
   }else{
     plotAncestors(id).forEach(aid=>{if(aid!==id)plotCollapsed.delete(aid);});
@@ -856,10 +936,6 @@ function renderPlotWorkspace(){
   if(plotView==='timeline'){renderPlotTimeline(canvas);return;}
   const wrap=document.createElement('div');wrap.className='plot-root-list';plotRoots().forEach(p=>{const n=renderPlotNode(p,null);if(n)wrap.appendChild(n);});canvas.appendChild(wrap);
 }
-// ── Corkboard / index-card view ──
-// Shows one level at a time (the children of plotFocusId, or the roots when
-// plotFocusId is unset) as draggable cards. "Open" drills into a card's own
-// children as the next level; the breadcrumb above walks back out.
 function plotContainerId(){return (plotFocusId&&plotIdea(plotFocusId))?plotFocusId:null;}
 function plotBoardItems(containerId){
   if(containerId==null)return plotRoots();
@@ -938,13 +1014,6 @@ function renderPlotCard(p,items,parentId){
   card.appendChild(footer);
   return card;
 }
-// ── Timeline / swimlane view ──
-// Like the corkboard, this shows one level at a time: the children of
-// plotFocusId (or the roots when unset) become lanes, laid out top to
-// bottom, and each lane's own children become its beats, laid out left to
-// right in story order. A beat with further children gets an "N nested"
-// link that drills into that beat as the new lane level — so, like the
-// corkboard, the timeline works at any depth, not just the root.
 function renderPlotTimeline(canvas){
   const containerId=plotContainerId();
   const lanes=plotBoardItems(containerId);
@@ -1061,36 +1130,17 @@ function openPlotWorkspace(){normalizePlotData();if(activePlotId&&!plotIdea(acti
 function closePlotWorkspace(){closePlotDialog();document.getElementById('plot-workspace').classList.remove('open');document.getElementById('plot-workspace').setAttribute('aria-hidden','true');}
 function togglePlotFilters(){document.getElementById('plot-filterbar').classList.toggle('open');}
 function clearPlotFilters(){document.getElementById('plot-search').value='';document.getElementById('plot-tag-filter').value='';document.getElementById('plot-view-filter').value='all';document.getElementById('plot-sort').value='story';renderPlotWorkspace();}
-
-function init(){
+async function init(){
   loadSettings();
   plotView=(settings.plotView==='board'||settings.plotView==='timeline')?settings.plotView:'tree';
-  const saved=localStorage.getItem('nw-collections');
-  if(saved){
-    try{
-      collections=JSON.parse(saved);
-      normalizeProjectData();
-      nextCollId=Math.max(...collections.map(c=>c.id),-1)+1;
-      nextChapterId=Math.max(...allChapters().map(ch=>ch.id),-1)+1;
-      nextBlockId=Math.max(...allChapters().flatMap(ch=>(ch.blocks||[]).map(b=>b.id)),-1)+1;
-      activeChapterId=parseInt(localStorage.getItem('nw-active-ch'),10);
-      activeCollId=parseInt(localStorage.getItem('nw-active-coll'),10);
-      if(!allChapters().some(ch=>ch.id===activeChapterId))activeChapterId=allChapters()[0]?.id??null;
-      if(!collections.some(c=>c.id===activeCollId))activeCollId=findChapterCollection(activeChapterId)?.id??collections[0]?.id??null;
-      if(!allChapters().length)loadSample();
-    }catch(e){loadSample();}
-  }else{loadSample();}
-  const savedPlots=localStorage.getItem('nw-plot-ideas');
-  if(savedPlots){try{plotIdeas=JSON.parse(savedPlots)||[];}catch(e){plotIdeas=[];}}
-  normalizePlotData();
-  normalizeProjectData();
+  await loadProjectData();
   const savedName=localStorage.getItem('nw-name');
   if(savedName)document.getElementById('project-name').value=savedName;
   const theme=localStorage.getItem('nw-theme');
   if(theme==='dark')document.documentElement.dataset.theme='dark';
   updateThemeBtn();
   buildColorPicker();
-  renderSidebar();render();applyAllSettings();initDrag();initChapterDrag();
+  renderSidebar();render();applyAllSettings();initDrag();initChapterDrag();initVirtualScroll();
   initLocalBackup();
   startBackupNudgeWatcher();
   document.getElementById('project-name').addEventListener('input',()=>{noteTextEdit();scheduleSave();});
@@ -1113,7 +1163,6 @@ function init(){
   }
   loadNotesIntoUI();
 }
-
 // force=true always re-renders (chapter switch, undo/redo, import — the
 // content genuinely needs to change under the user). Without force, skips
 // re-rendering while the field is focused so incidental re-renders elsewhere
@@ -1125,7 +1174,6 @@ function loadNotesIntoUI(force){
   if(!force&&document.activeElement===el)return;
   renderMarkdownInto(el,ch?.notes||'');
 }
-
 function loadSample(){
   const sb=[
     {type:'scene',text:'Chapter one — the morning of the last ordinary day'},
@@ -1151,7 +1199,6 @@ function loadSample(){
   ];
   nextCollId=2;nextChapterId=4;activeCollId=0;activeChapterId=0;
 }
-
 // ── Sidebar ──
 function renderSidebar(){
   const list=document.getElementById('collection-list');
@@ -1222,9 +1269,7 @@ function renderSidebar(){
     group.appendChild(header);group.appendChild(chapList);list.appendChild(group);
   });
 }
-
-function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
+function escHtml(s){return s.replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"');}
 function startRenameEl(el,onDone){
   el.contentEditable='true';el.focus();
   const range=document.createRange();range.selectNodeContents(el);
@@ -1233,9 +1278,7 @@ function startRenameEl(el,onDone){
   el.addEventListener('blur',finish,{once:true});
   el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();el.blur();}},{once:true});
 }
-
 function toggleCollection(id){const c=collections.find(c=>c.id===id);if(c){c.open=!c.open;renderSidebar();save();}}
-
 function addCollection(){
   const icon=COLL_ICONS[collections.length%COLL_ICONS.length];
   const firstChap={id:nextChapterId++,name:'Chapter 1',blocks:[],notes:''};
@@ -1259,9 +1302,6 @@ function deleteCollection(id,anchorEl){
     renderSidebar();render();save();
   },anchorEl);
 }
-// Copy naming: strip any existing " copy" / " copy N" suffix first so
-// duplicating a duplicate doesn't stack suffixes, then find the lowest-numbered
-// unused "<root> copy"/"<root> copy N" name against the given lowercase name set.
 function nextCopyName(base,existingNamesLower){
   const m=/^(.*) copy(?: (\d+))?$/i.exec(base);
   const root=(m?m[1]:base).trim()||base;
@@ -1282,7 +1322,7 @@ function duplicateCollection(id,anchorEl){
     clone.chapters=(clone.chapters||[]).map(ch=>{
       const newCh={...ch,id:nextChapterId++,blocks:(ch.blocks||[]).map(b=>({...b,id:nextBlockId++}))};
       newCh.name=nextCopyName(ch.name,existingChapNames);
-      newCh.aliases=[]; // don't let the copy inherit wikilink aliases from the original
+      newCh.aliases=[];
       existingChapNames.add(newCh.name.toLowerCase());
       return newCh;
     });
@@ -1314,7 +1354,7 @@ function duplicateChapter(collId,chapId){
   const clone=JSON.parse(JSON.stringify(ch));
   clone.id=nextChapterId++;
   clone.blocks=(clone.blocks||[]).map(b=>({...b,id:nextBlockId++}));
-  clone.aliases=[]; // don't let the copy inherit wikilink aliases from the original
+  clone.aliases=[];
   const existingNames=new Set(allChapters().map(c=>c.name.toLowerCase()));
   clone.name=nextCopyName(ch.name,existingNames);
   const idx=coll.chapters.findIndex(c=>c.id===chapId);
@@ -1343,8 +1383,6 @@ function moveChapter(collId,chapId,dir){
   renderSidebar();save();
 }
 function switchChapter(collId,chapId){
-  // ch.notes is kept live in sync on every keystroke via wireMdEditable's
-  // getSet, so there's no need to flush the outgoing chapter's field here.
   activeCollId=collId;activeChapterId=chapId;
   renderSidebar();render();
   loadNotesIntoUI(true);
@@ -1355,7 +1393,6 @@ function updateChapTitle(){
   const ch=activeChapter(),coll=activeCollection();
   document.getElementById('chap-title-display').textContent=ch?(coll?coll.name+' · '+ch.name:ch.name):'';
 }
-
 // ── Render blocks ──
 // ── Inline markdown: **bold**, *italic*, [[Link]], [[Link|Alias]] ──
 // Marker characters stay as real (dimmed) text nodes in the DOM, so
@@ -1366,7 +1403,6 @@ function updateChapTitle(){
 // (Running one combined regex over the whole string let a stray, unpaired
 // "*" anywhere before a [[Link]] pair up with another "*" anywhere after it
 // and swallow the link's brackets as literal italic text, silently breaking
-// the link's hide/reveal marks — see the segments approach below instead.)
 function parseInlineMd(text,revealLinkAt=null){
   const frag=document.createDocumentFragment();
   const linkRe=/\[\[([^\[\]]+?)\]\]/g;
@@ -1394,11 +1430,6 @@ function parseInlineMd(text,revealLinkAt=null){
   if(last<text.length)appendInlineEmphasis(frag,text.slice(last),last,revealLinkAt);
   return frag;
 }
-// Matches **bold**/*italic* within a plain-text segment (no [[ ]] involved —
-// those are already stripped out by parseInlineMd before this runs) and
-// appends the resulting nodes to frag. baseOffset is that segment's start
-// position within the original full string, so reveal-at-caret math still
-// lines up against the caret offset computed over the whole field.
 function appendInlineEmphasis(frag,text,baseOffset,revealLinkAt){
   const re=/\*\*([^*\n]+?)\*\*|\*([^*\n]+?)\*/g;
   let last=0,m;
@@ -1427,8 +1458,6 @@ function appendInlineEmphasis(frag,text,baseOffset,revealLinkAt){
 }
 function mdMark(str,hidden){const s=document.createElement('span');s.className='md-mark'+(hidden?' md-mark-hidden':'');s.textContent=str;return s;}
 function renderMarkdownInto(el,text,revealLinkAt=null){el.innerHTML='';el.appendChild(parseInlineMd(text||'',revealLinkAt));}
-
-
 // ── Caret offset (character index within textContent) survives re-render ──
 function getCaretOffset(el){
   const sel=window.getSelection();
@@ -1460,7 +1489,6 @@ function setCaretOffset(el,offset){
   range.collapse(true);
   const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
 }
-// Selection start/end as character offsets into el.textContent (mirrors getCaretOffset).
 function getSelectionOffsets(el){
   const sel=window.getSelection();
   if(!sel.rangeCount)return null;
@@ -1478,15 +1506,9 @@ function setSelectionRange(el,start,end){
   range.setEnd(endPos.node,endPos.offset);
   const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
 }
-// Ctrl/Cmd+B and Ctrl/Cmd+I: wrap (or unwrap) the current selection in ** or *
-// markdown markers. Requires an actual selection — a collapsed caret does nothing,
-// since there's no clean way to know what the person intends to bold/italicize yet.
 function wrapSelection(el,getSet,marker){
   const off=getSelectionOffsets(el);
   if(!off||off.start===off.end)return;
-  // Force a boundary right before the scripted DOM mutation runs, so Ctrl+Z
-  // immediately after bolding/italicizing undoes just that, never merges
-  // into whatever typing came before it.
   pushUndoSnapshot();
   const {start,end}=off;
   const raw=el.textContent;
@@ -1494,11 +1516,9 @@ function wrapSelection(el,getSet,marker){
   const before=raw.slice(0,start),selText=raw.slice(start,end),after=raw.slice(end);
   let newRaw,newStart,newEnd;
   if(selText.length>=2*mLen&&selText.startsWith(marker)&&selText.endsWith(marker)){
-    // Selection includes the markers itself — unwrap.
     const inner=selText.slice(mLen,selText.length-mLen);
     newRaw=before+inner+after;newStart=start;newEnd=start+inner.length;
   }else if(before.endsWith(marker)&&after.startsWith(marker)){
-    // Markers sit just outside the selection — unwrap.
     newRaw=before.slice(0,before.length-mLen)+selText+after.slice(mLen);
     newStart=start-mLen;newEnd=end-mLen;
   }else{
@@ -1509,9 +1529,6 @@ function wrapSelection(el,getSet,marker){
   renderMarkdownInto(el,newRaw);
   setSelectionRange(el,newStart,newEnd);
 }
-
-// ── Wire a contenteditable for live markdown + wiki-link autocomplete ──
-// getSet = {get:()=>string, set:(v)=>void} lets this work for any chapter-backed editor.
 function wireMdEditable(el,getSet,opts){
   opts=opts||{};
   el.addEventListener('input',()=>{
@@ -1528,25 +1545,16 @@ function wireMdEditable(el,getSet,opts){
   const revealAtCaret=()=>{
     const sel=window.getSelection();
     if(!sel||sel.rangeCount===0||!el.contains(sel.anchorNode)||!el.contains(sel.focusNode))return;
-    // Never re-render while a range is selected: doing so replaces the DOM
-    // nodes that own the native selection and makes highlighting disappear.
     if(!sel.isCollapsed)return;
     const off=getCaretOffset(el);
     if(off!=null){const raw=el.textContent;renderMarkdownInto(el,raw,off);setCaretOffset(el,off);}
   };
   el.addEventListener('keyup',revealAtCaret);
-  // Mouse clicks need the same Obsidian-style reveal, but wait until mouseup
-  // so drag-selection has finished before considering a caret reveal.
   el.addEventListener('mouseup',()=>setTimeout(revealAtCaret,0));
   el.addEventListener('blur',()=>{
-    // Undo/redo replaces editor DOM nodes while the old field may still own focus.
-    // Do not let that stale field write its pre-restore contents back into the model.
     if(applyingUndo){hideWikilinkAC();return;}
     const raw=el.textContent;
     getSet.set(raw);
-    // Caret is leaving the field entirely, so nothing should stay "revealed" —
-    // re-render with no reveal position to re-hide any marks the caret was
-    // last sitting next to (keyup/mouseup only reveal, they never hide again).
     renderMarkdownInto(el,raw);
     hideWikilinkAC();
     if(opts.onBlur)opts.onBlur();
@@ -1561,9 +1569,6 @@ function wireMdEditable(el,getSet,opts){
       if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();moveWikilinkAcSel(e.key==='ArrowDown'?1:-1);return;}
       if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();commitWikilinkAcSel(el,getSet);return;}
     }
-    // Multiline fields (chapter notes) insert a literal newline character
-    // rather than letting contenteditable create its own <div>/<br> nodes —
-    // keeping el.textContent a clean, round-trippable plain-text source.
     if(opts.multiline&&e.key==='Enter'&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){
       e.preventDefault();
       noteTextEdit();
@@ -1584,8 +1589,6 @@ function wireMdEditable(el,getSet,opts){
   });
   el.__mdGetSet=getSet;
 }
-
-// ── Wiki-link autocomplete popup ──
 function handleWikilinkAutocomplete(el,raw,caretOffset){
   if(caretOffset==null){hideWikilinkAC();return;}
   const before=raw.slice(0,caretOffset);
@@ -1595,7 +1598,6 @@ function handleWikilinkAutocomplete(el,raw,caretOffset){
   const q=acQuery.toLowerCase();
   const chapters=allChapters().filter(c=>c.name.toLowerCase().includes(q)||chapterAliases(c).some(a=>a.toLowerCase().includes(q))||chapterTags(c).some(t=>t.toLowerCase().includes(q))).map(c=>({...c,_plot:false}));
   const ideas=plotIdeas.filter(p=>(p.text||'').toLowerCase().includes(q)||p.id.toLowerCase().includes(q)||(p.tags||[]).some(t=>t.toLowerCase().includes(q))).map(p=>({id:p.id,name:(p.text||'').trim()||'Untitled idea',tags:p.tags||[],aliases:[],_plot:true}));
-  // Chapters remain the primary suggestions; Plot Ideas are available after them.
   acItems=[...chapters,...ideas].slice(0,12);
   acSel=0;
   showWikilinkAC();
@@ -1663,41 +1665,97 @@ function openOrCreateChapterEntry(name){
   const coll=findChapterCollection(entry.id);
   if(coll)switchChapter(coll.id,entry.id);
 }
-
 function render(){
   const editor=document.getElementById('editor');
-  const addBar=document.getElementById('add-bar');
   const chapterMeta=document.getElementById('chapter-meta');
-  editor.innerHTML='';
-  if(chapterMeta)editor.appendChild(chapterMeta);
+  const addBar=document.getElementById('add-bar');
+  const ch=activeChapter();
+  const chId=ch?ch.id:null;
+  if(chId!==renderedChapterId){
+    editor.innerHTML='';
+    if(chapterMeta)editor.appendChild(chapterMeta);
+    editor.appendChild(addBar);
+    for(const entry of blockDom.values())entry.ro&&entry.ro.disconnect();
+    blockDom.clear();
+    virtualTopSpacer=null;virtualBottomSpacer=null;virtualTrailingDz=null;
+    vwin={start:0,end:0};
+    renderedChapterId=chId;
+  }
   renderChapterMeta();
-  const bs=blocks();
-  bs.forEach((b,i)=>{
-    const dz=document.createElement('div');
-    dz.className='drop-zone';dz.dataset.dropIndex=i;
-    editor.appendChild(dz);
-    const wrap=buildBlockWrap(b,i,bs);
-    editor.appendChild(wrap);
-  });
-  const lastDz=document.createElement('div');
-  lastDz.className='drop-zone';lastDz.dataset.dropIndex=bs.length;
-  editor.appendChild(lastDz);
-  editor.appendChild(addBar);
+  renderBlocksVirtualized(addBar);
   updateStats();updateChapTitle();
+}
+// Builds/reconciles only the blocks that should currently be in the DOM
+// (the "window"). Existing wrap/drop-zone nodes are reused by block id, so
+// this is safe (and cheap) to call both for a full render and for a
+// scroll-triggered window shift — it never touches nodes for blocks whose
+// position and type haven't changed.
+function renderBlocksVirtualized(addBar){
+  const editor=document.getElementById('editor');
+  addBar=addBar||document.getElementById('add-bar');
+  const bs=blocks();
+  const n=bs.length;
+  if(!virtualTopSpacer){
+    virtualTopSpacer=document.createElement('div');virtualTopSpacer.className='virtual-spacer';
+    virtualBottomSpacer=document.createElement('div');virtualBottomSpacer.className='virtual-spacer';
+    editor.insertBefore(virtualTopSpacer,addBar);
+    editor.insertBefore(virtualBottomSpacer,addBar);
+  }
+  const virtualize=!dragForceFullWindow&&n>VIRTUALIZE_THRESHOLD;
+  const[start,end]=virtualize?computeVirtualWindow(bs):[0,n];
+  vwin={start,end};
+  const windowIds=new Set(bs.slice(start,end).map(b=>b.id));
+  for(const[id,entry] of[...blockDom]){
+    if(!windowIds.has(id)){
+      entry.wrap.remove();entry.dz.remove();entry.ro&&entry.ro.disconnect();
+      blockDom.delete(id);
+    }
+  }
+  virtualTopSpacer.style.height=start>0?sumHeights(bs,0,start)+'px':'0px';
+  let cursor=virtualTopSpacer;
+  for(let i=start;i<end;i++){
+    const b=bs[i];
+    let entry=blockDom.get(b.id);
+    if(!entry||entry.type!==b.type){
+      if(entry){entry.wrap.remove();entry.dz.remove();entry.ro&&entry.ro.disconnect();}
+      const dz=document.createElement('div');dz.className='drop-zone';
+      const wrap=buildBlockWrap(b,i,bs);
+      const ro=new ResizeObserver(()=>recordHeight(b.id,wrap.offsetHeight));
+      ro.observe(wrap);
+      entry={wrap,dz,type:b.type,ro};
+      blockDom.set(b.id,entry);
+    }else{
+      entry.wrap.classList.toggle('block-focused',focusedId===b.id);
+    }
+    entry.dz.dataset.dropIndex=i;
+    if(cursor.nextSibling!==entry.dz)editor.insertBefore(entry.dz,cursor.nextSibling);
+    cursor=entry.dz;
+    if(cursor.nextSibling!==entry.wrap)editor.insertBefore(entry.wrap,cursor.nextSibling);
+    cursor=entry.wrap;
+    recordHeight(b.id,entry.wrap.offsetHeight||estimatedHeight(b));
+  }
+  if(end===n){
+    if(!virtualTrailingDz){virtualTrailingDz=document.createElement('div');virtualTrailingDz.className='drop-zone';}
+    virtualTrailingDz.dataset.dropIndex=n;
+    if(cursor.nextSibling!==virtualTrailingDz)editor.insertBefore(virtualTrailingDz,cursor.nextSibling);
+    cursor=virtualTrailingDz;
+  }else if(virtualTrailingDz&&virtualTrailingDz.parentNode){
+    virtualTrailingDz.remove();
+  }
+  if(virtualBottomSpacer.previousSibling!==cursor)editor.insertBefore(virtualBottomSpacer,cursor.nextSibling);
+  virtualBottomSpacer.style.height=end<n?sumHeights(bs,end,n)+'px':'0px';
+  cursor=virtualBottomSpacer;
+  if(addBar.previousSibling!==cursor||addBar.parentNode!==editor)editor.insertBefore(addBar,cursor.nextSibling);
   if(viewMode==='focus')refreshFocusClasses();
   reapplySettings();
-  // Re-apply group collapse states after DOM is ready
   requestAnimationFrame(()=>{
-    blocks().filter(b=>b.type==='group'&&b.collapsed).forEach(b=>applyGroupCollapse(b));
+    bs.filter(b=>b.type==='group'&&b.collapsed).forEach(b=>applyGroupCollapse(b));
   });
 }
-
 function buildBlockWrap(b,i,bs){
   const wrap=document.createElement('div');
   wrap.className=`block-wrap type-${b.type}${focusedId===b.id?' block-focused':''}`;
   wrap.dataset.id=b.id;
-
-  // Gutter
   const gutter=document.createElement('div');
   gutter.className='block-gutter';
   gutter.innerHTML=`<div class="gutter-inner">
@@ -1706,13 +1764,10 @@ function buildBlockWrap(b,i,bs){
     <button class="gutter-btn" title="Change type" onclick="openPicker(event,${b.id})"><i class="ti ti-dots"></i></button>
     <button class="gutter-btn" title="Add block below" onclick="addBlock('${b.type}',${i+1})"><i class="ti ti-plus"></i></button>
   </div>`;
-
-  // Content
   const content=document.createElement('div');
   content.className='block-content';
   const inner=document.createElement('div');
   inner.className='block-inner';
-
   if(b.type==='image'){
     buildImageBlock(b,inner);
   } else if(b.type==='custom'){
@@ -1720,7 +1775,6 @@ function buildBlockWrap(b,i,bs){
   } else if(b.type==='group'){
     buildGroupBlock(b,inner,i,bs);
   } else {
-    // Standard text block
     const label=document.createElement('div');
     label.className='block-label';
     label.textContent=TYPE_LABELS[b.type]||b.type;
@@ -1737,20 +1791,16 @@ function buildBlockWrap(b,i,bs){
     });
     inner.appendChild(label);inner.appendChild(p);
   }
-
   content.appendChild(inner);wrap.appendChild(gutter);wrap.appendChild(content);
   return wrap;
 }
-
-// ── Image block ──
 function buildImageBlock(b,inner){
   const label=document.createElement('div');
   label.className='block-label';label.textContent='image';label.style.display=showLabels?'block':'none';
   inner.appendChild(label);
-
   if(b.src){
     const img=document.createElement('img');
-    img.className='block-img-img'; // just a class for potential styling
+    img.className='block-img-img';
     img.src=b.src;img.alt=b.caption||'';img.style.maxWidth='100%';img.style.borderRadius='6px';img.style.display='block';
     img.style.cursor='pointer';img.title='Click to replace image';
     img.onclick=()=>triggerImageUpload(b.id);
@@ -1774,13 +1824,11 @@ function buildImageBlock(b,inner){
     inner.appendChild(area);
   }
 }
-
 function triggerImageUpload(blockId){
   pendingImageBlockId=blockId;
   document.getElementById('img-input').value='';
   document.getElementById('img-input').click();
 }
-
 function handleImageFile(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -1792,23 +1840,19 @@ function handleImageFile(e){
   };
   reader.readAsDataURL(file);
 }
-
 // ── Custom block ──
 function buildCustomBlock(b,inner,i){
   if(!b.label)b.label='Custom';
   if(!b.color)b.color='#999999';
   inner.style.borderLeftColor=b.color;
-
   const labelWrap=document.createElement('div');
   labelWrap.className='type-custom block-label-wrap';
   labelWrap.style.display=showLabels?'flex':'none';
-
   const swatch=document.createElement('div');
   swatch.className='custom-color-swatch';
   swatch.style.background=b.color;
   swatch.title='Change colour';
   swatch.onclick=e=>{e.stopPropagation();openColorPicker(e,b.id);};
-
   const labelEl=document.createElement('input');
   labelEl.className='custom-label-edit';
   labelEl.value=b.label;
@@ -1816,10 +1860,8 @@ function buildCustomBlock(b,inner,i){
   labelEl.style.color=b.color;
   labelEl.addEventListener('input',()=>{noteTextEdit();b.label=labelEl.value;scheduleSave();});
   labelEl.addEventListener('blur',()=>save());
-
   labelWrap.appendChild(swatch);labelWrap.appendChild(labelEl);
   inner.appendChild(labelWrap);
-
   const p=document.createElement('div');
   p.contentEditable='true';
   p.setAttribute('data-placeholder','Write here...');
@@ -1833,38 +1875,29 @@ function buildCustomBlock(b,inner,i){
   });
   inner.appendChild(p);
 }
-
-// ── Group block ──
 function buildGroupBlock(b,inner,i,bs){
   if(b.level===undefined)b.level=0;
   const lvl=Math.max(0,Math.min(4,b.level||0));
   const indents=[0,14,28,42,56];
   const fontSizes=[11,11,10,10,10];
   const lineH=[1.5,1.4,1.3,1.3,1.3];
-
   inner.style.background='transparent';
   inner.style.border='none';
   inner.style.padding=`${10-lvl}px 16px ${4}px ${16+indents[lvl]}px`;
   inner.style.borderLeft='none';
-
   const row=document.createElement('div');
   row.style.cssText='display:flex;align-items:center;gap:6px;user-select:none;';
-
-  // Chevron — only toggle mechanism
   const chevron=document.createElement('i');
   chevron.className='ti ti-chevron-down';
   chevron.style.cssText=`font-size:${fontSizes[lvl]+1}px;color:var(--text3);transition:transform 0.2s;cursor:pointer;flex-shrink:0;`;
   if(b.collapsed)chevron.style.transform='rotate(-90deg)';
-
   chevron.onclick=(e)=>{
     e.stopPropagation();
     b.collapsed=!b.collapsed;
     save();
-    // Toggle visibility of subsequent blocks until next group of same or higher level
     applyGroupCollapse(b);
     chevron.style.transform=b.collapsed?'rotate(-90deg)':'';
   };
-
   // Level selector — small number badge
   const lvlBadge=document.createElement('button');
   lvlBadge.title='Group level (click to increase, right-click to decrease)';
@@ -1872,7 +1905,6 @@ function buildGroupBlock(b,inner,i,bs){
   lvlBadge.textContent=lvl;
   lvlBadge.onclick=(e)=>{e.stopPropagation();b.level=((lvl+1)%5);render();save();};
   lvlBadge.oncontextmenu=(e)=>{e.preventDefault();e.stopPropagation();b.level=((lvl+4)%5);render();save();};
-
   const nameEl=document.createElement('input');
   nameEl.className='group-name-edit';
   nameEl.style.cssText=`font-size:${fontSizes[lvl]}px;font-weight:${600-lvl*100};letter-spacing:${0.07-lvl*0.01}em;opacity:${0.65-lvl*0.05};`;
@@ -1881,19 +1913,14 @@ function buildGroupBlock(b,inner,i,bs){
   nameEl.addEventListener('input',()=>{noteTextEdit();b.name=nameEl.value;scheduleSave();});
   nameEl.addEventListener('blur',()=>save());
   nameEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();nameEl.blur();}});
-
   const line=document.createElement('div');
   line.style.cssText=`flex:1;height:0.5px;background:var(--border2);opacity:${1-lvl*0.15};`;
-
   row.appendChild(chevron);row.appendChild(lvlBadge);row.appendChild(nameEl);row.appendChild(line);
   inner.appendChild(row);
-
-  // Apply current collapsed state immediately (after DOM settles)
   if(b.collapsed){
     requestAnimationFrame(()=>applyGroupCollapse(b));
   }
 }
-
 function applyGroupCollapse(b){
   const editor=document.getElementById('editor');
   const wraps=[...editor.querySelectorAll('.block-wrap')];
@@ -1901,7 +1928,6 @@ function applyGroupCollapse(b){
   const myLevel=b.level||0;
   for(let j=myIdx+1;j<wraps.length;j++){
     const nextB=blocks().find(bl=>bl.id===parseInt(wraps[j].dataset.id));
-    // Stop at another group of same or higher level (lower number = higher)
     if(nextB&&nextB.type==='group'&&(nextB.level||0)<=myLevel)break;
     const show=!b.collapsed;
     wraps[j].style.display=show?'':'none';
@@ -1909,8 +1935,6 @@ function applyGroupCollapse(b){
     if(prev&&prev.classList.contains('drop-zone'))prev.style.display=show?'':'none';
   }
 }
-
-// ── Color picker ──
 function buildColorPicker(){
   const popup=document.getElementById('color-picker-popup');
   CUSTOM_COLORS.forEach(c=>{
@@ -1920,7 +1944,6 @@ function buildColorPicker(){
     popup.appendChild(sw);
   });
 }
-
 function openColorPicker(e,id){
   pickerTargetId=id;
   const popup=document.getElementById('color-picker-popup');
@@ -1928,21 +1951,17 @@ function openColorPicker(e,id){
   popup.style.top=(e.clientY+8)+'px';
   popup.style.left=e.clientX+'px';
 }
-
 function applyCustomColor(color){
   const ch=activeChapter();if(!ch)return;
   const b=ch.blocks.find(b=>b.id===pickerTargetId);
   if(b){b.color=color;render();save();}
   document.getElementById('color-picker-popup').classList.remove('open');
 }
-
-// ── Stats ──
 function refreshFocusClasses(){
   document.querySelectorAll('.block-wrap').forEach(w=>{
     w.classList.toggle('block-focused',parseInt(w.dataset.id)===focusedId);
   });
 }
-
 function updateStats(){
   const bs=blocks();
   const words=bs.reduce((a,b)=>a+(b.text||'').trim().split(/\s+/).filter(Boolean).length,0);
@@ -1963,8 +1982,6 @@ function updateStats(){
     bm.appendChild(dot);
   });
 }
-
-// ── Block operations ──
 function addBlock(type,afterIndex){
   const ch=activeChapter();if(!ch)return;
   pushUndoSnapshot();
@@ -1984,7 +2001,6 @@ function addBlock(type,afterIndex){
   }
   save();
 }
-
 function deleteBlock(id){
   const ch=activeChapter();if(!ch)return;
   if(ch.blocks.length<=1){toast('Need at least one block');return;}
@@ -1995,8 +2011,6 @@ function deleteBlock(id){
     render();save();
   },btn);
 }
-
-// ── Drag ──
 function initDrag(){
   const editor=document.getElementById('editor');
   editor.addEventListener('mousedown',e=>{
@@ -2012,7 +2026,13 @@ function initDrag(){
     editor.addEventListener('touchend',()=>{editor.removeEventListener('touchmove',onTouchMove);endDrag();},{once:true});
   },{passive:true});
 }
-function startDrag(id){dragId=id;const w=document.querySelector(`.block-wrap[data-id="${dragId}"]`);if(w)w.classList.add('dragging');}
+function startDrag(id){
+  dragId=id;
+  if(blocks().length>VIRTUALIZE_THRESHOLD){
+    dragForceFullWindow=true;renderBlocksVirtualized();
+  }
+  const w=document.querySelector(`.block-wrap[data-id="${dragId}"]`);if(w)w.classList.add('dragging');
+}
 function onMouseMove(e){updateDropTarget(e.clientX,e.clientY);}
 function onTouchMove(e){if(dragId===null)return;e.preventDefault();const t=e.touches[0];updateDropTarget(t.clientX,t.clientY);}
 function updateDropTarget(x,y){
@@ -2025,23 +2045,26 @@ function updateDropTarget(x,y){
 }
 function endDrag(){
   const w=document.querySelector(`.block-wrap[data-id="${dragId}"]`);if(w)w.classList.remove('dragging');
+  let moved=false;
   if(dragOverIndex!==null){
     const ch=activeChapter();
     if(ch){
       const from=ch.blocks.findIndex(b=>b.id===dragId);
       if(from!==-1){
         pushUndoSnapshot();
-        const[moved]=ch.blocks.splice(from,1);
+        const[movedBlock]=ch.blocks.splice(from,1);
         const to=dragOverIndex>from?dragOverIndex-1:dragOverIndex;
-        ch.blocks.splice(to,0,moved);render();save();
+        ch.blocks.splice(to,0,movedBlock);
+        moved=true;
       }
     }
   }
   dragId=null;dragOverIndex=null;
+  dragForceFullWindow=false;
+  if(moved)save();
+  render();
   document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('active'));
 }
-
-// ── Chapter drag (sidebar) ──
 function initChapterDrag(){
   const list=document.getElementById('collection-list');
   list.addEventListener('mousedown',e=>{
@@ -2092,23 +2115,18 @@ function endChapDrag(){
   chapDragId=null;chapDragOverIndex=null;chapDragCollId=null;
   document.querySelectorAll('.chapter-drop-zone').forEach(z=>z.classList.remove('active'));
 }
-
-// ── Type picker ──
 function openPicker(e,id){
   e.stopPropagation();pickerTargetId=id;
   const picker=document.getElementById('type-picker');
-  // Show offscreen first to measure height
   picker.style.visibility='hidden';picker.style.display='flex';
   const ph=picker.offsetHeight, pw=picker.offsetWidth;
   picker.style.display='';picker.style.visibility='';
   picker.classList.add('open');
   const rect=e.currentTarget.getBoundingClientRect();
   const margin=6;
-  // Prefer below, flip above if not enough room
   let top=rect.bottom+margin;
   if(top+ph>window.innerHeight-margin)top=rect.top-ph-margin;
   top=Math.max(margin,top);
-  // Prefer aligning left edge, shift left if off right edge
   let left=rect.left;
   if(left+pw>window.innerWidth-margin)left=window.innerWidth-pw-margin;
   left=Math.max(margin,left);
@@ -2119,7 +2137,6 @@ function changeType(type){
   const b=ch.blocks.find(b=>b.id===pickerTargetId);
   if(b){
     b.type=type;
-    // Ensure type-specific fields exist
     if(type==='image'&&!b.src)b.src='';
     if(type==='custom'){if(!b.label)b.label='Custom';if(!b.color)b.color='#999999';}
     if(type==='group'){if(!b.name)b.name='Group';if(b.collapsed===undefined)b.collapsed=false;}
@@ -2127,24 +2144,18 @@ function changeType(type){
   }
   document.getElementById('type-picker').classList.remove('open');
 }
-
-// ── View ──
 function setView(v){
   viewMode=v;showLabels=v!=='clean';
   ['normal','focus','clean'].forEach(m=>document.getElementById('view-'+m).classList.toggle('active',m===v));
   document.getElementById('editor').classList.toggle('focus-mode',v==='focus');
   if(v!=='focus')focusedId=null;render();
 }
-
-// ── Notes ──
 function toggleChapterMeta(){
   const meta=document.getElementById('chapter-meta');if(!meta)return;
   const collapsed=meta.classList.toggle('collapsed');
   const btn=meta.querySelector('.chapter-meta-toggle');
   if(btn)btn.setAttribute('aria-expanded',String(!collapsed));
 }
-
-// ── Chapter metadata ──
 function updateChapterMetaSummary(){
   const ch=activeChapter(),summary=document.getElementById('chapter-meta-summary');
   if(!summary)return;
@@ -2258,8 +2269,6 @@ function handleChapterTagKeydown(e){
     const tags=chapterTags(activeChapter());removeChapterTag(tags[tags.length-1]);
   }
 }
-
-// ── Theme ──
 function toggleTheme(){
   const dark=document.documentElement.dataset.theme==='dark';
   document.documentElement.dataset.theme=dark?'':'dark';
@@ -2269,8 +2278,6 @@ function updateThemeBtn(){
   const dark=document.documentElement.dataset.theme==='dark';
   document.getElementById('theme-btn').innerHTML=dark?'<i class="ti ti-sun"></i>':'<i class="ti ti-moon"></i>';
 }
-
-// ── Sidebar toggle ──
 function isMobile(){return window.matchMedia('(max-width:600px)').matches;}
 function openMobileSidebar(){
   document.getElementById('sidebar').classList.add('mobile-open');
@@ -2289,8 +2296,6 @@ function toggleSidebar(){
   }
   document.getElementById('sidebar').classList.toggle('collapsed');
 }
-
-// ── Settings ──
 function loadSettings(){const s=localStorage.getItem('nw-settings');if(s){try{settings={...settings,...JSON.parse(s)};}catch(e){}}}
 function saveSettings(){localStorage.setItem('nw-settings',JSON.stringify(settings));}
 function applyAllSettings(){
@@ -2328,11 +2333,7 @@ function applyFontSize(val,persist=true){settings.fontSize=parseInt(val);documen
 function applyWidth(key,persist=true){settings.width=key;document.getElementById('editor').style.maxWidth=WIDTH_MAP[key];['narrow','medium','wide'].forEach(k=>document.getElementById('width-'+k).classList.toggle('active',k===key));if(persist)saveSettings();}
 function applyLineHeight(key,persist=true){settings.lineHeight=key;document.querySelectorAll('.block-inner [contenteditable]').forEach(el=>el.style.lineHeight=LH_MAP[key]);['tight','normal','airy'].forEach(k=>document.getElementById('lh-'+k).classList.toggle('active',k===key));if(persist)saveSettings();}
 function toggleSettings(){const panel=document.getElementById('settings-panel'),btn=document.getElementById('settings-btn');const open=panel.classList.toggle('open');btn.classList.toggle('active',open);}
-
-// ── Export / Import ──
-// ── Export system ──
 let exportScope='chapter';
-
 function toggleExportMenu(e){
   e.stopPropagation();
   const menu=document.getElementById('export-menu');
@@ -2350,14 +2351,12 @@ function toggleExportMenu(e){
   }
 }
 function closeExportMenu(){document.getElementById('export-menu').classList.remove('open');}
-
 function setExportScope(scope){
   exportScope=scope;
   ['chapter','collection','all'].forEach(s=>{
     document.getElementById('exp-scope-'+s).classList.toggle('active',s===scope);
   });
 }
-
 function getScopeData(){
   const projName=(document.getElementById('project-name').value||'story').replace(/[^a-z0-9_\-\s]/gi,'_');
   if(exportScope==='chapter'){
@@ -2374,7 +2373,6 @@ function getScopeData(){
   }
   return{chapters:allChapters().filter(ch=>chapterType(ch)==='chapter'),label:projName,filename:projName};
 }
-
 function blocksToTxt(chapters,imgMap){
   return chapters.map(ch=>{
     const h='─── '+ch.name+' ───';
@@ -2388,14 +2386,24 @@ function blocksToTxt(chapters,imgMap){
     return h+'\n\n'+body;
   }).join('\n\n\n');
 }
-
+async function compileTxtAsync(chapters,imgMap){
+  const blockCount=chapters.reduce((n,ch)=>n+(ch.blocks?ch.blocks.length:0),0);
+  if(blockCount<400)return blocksToTxt(chapters,imgMap);
+  try{
+    const{text}=await callAppWorker('compileTxt',{chapters:chaptersForWorker(chapters),imgMap});
+    return text;
+  }catch(e){
+    return blocksToTxt(chapters,imgMap);
+  }
+}
 async function doExport(format){
   closeExportMenu();
   const {chapters,label,filename}=getScopeData();
   if(!chapters.length){toast('Nothing to export');return;}
-
   if(format==='txt'){
-    download(filename+'.txt',blocksToTxt(chapters,null),'text/plain');
+    toast('Preparing export\u2026');
+    const text=await compileTxtAsync(chapters,null);
+    download(filename+'.txt',text,'text/plain');
     markBackupExported();
     toast('Exported '+label+' as .txt');
     return;
@@ -2430,7 +2438,7 @@ async function doExport(format){
           imgFolder.file(fname,b.src.split(',')[1],{base64:true});
         });
       });
-      zip.file(label+'.txt',blocksToTxt(chapters,imgMap));
+      zip.file(label+'.txt',await compileTxtAsync(chapters,imgMap));
       const notesContent=chapters.filter(c=>c.notes&&c.notes.trim()).map(c=>'=== '+c.name+' ===\n'+c.notes).join('\n\n');
       if(notesContent)zip.file('notes.txt',notesContent);
       if(exportScope==='all'){
@@ -2446,10 +2454,7 @@ async function doExport(format){
     }catch(err){toast('Export failed: '+err.message);console.error(err);}
   }
 }
-
 function exportJson(){doExport('json');}
-
-
 function importJson(){document.getElementById('import-input').click();}
 function handleImport(e){
   const file=e.target.files[0];if(!file)return;
@@ -2457,7 +2462,6 @@ function handleImport(e){
   reader.onload=ev=>{
     try{
       const data=JSON.parse(ev.target.result);
-      // Remap IDs to avoid collisions with existing content
       function remapChapter(ch){
         const newCh={...ch,id:nextChapterId++,blocks:(ch.blocks||[]).map(b=>({...b,id:nextBlockId++}))};
         return newCh;
@@ -2465,9 +2469,7 @@ function handleImport(e){
       function remapCollection(coll){
         return{...coll,id:nextCollId++,chapters:(coll.chapters||[]).map(remapChapter)};
       }
-
       if(data.collections){
-        // Full project — replace everything
         collections=data.collections;
         plotIdeas=Array.isArray(data.plotIdeas)?data.plotIdeas:[];
         normalizePlotData();
@@ -2479,14 +2481,12 @@ function handleImport(e){
         activeChapterId=allChapters()[0]?.id;
         toast('Project imported');
       } else if(data.collection){
-        // Single collection export — append as new collection
         const newColl=remapCollection(data.collection);
         collections.push(newColl);
         activeCollId=newColl.id;
         activeChapterId=newColl.chapters[0]?.id;
         toast('Collection "'+newColl.name+'" added');
       } else if(data.chapter){
-        // Single chapter export — append to active collection
         const coll=activeCollection();
         if(!coll){toast('No active collection to import into');return;}
         const newCh=remapChapter(data.chapter);
@@ -2495,14 +2495,12 @@ function handleImport(e){
         activeChapterId=newCh.id;
         toast('Chapter "'+newCh.name+'" added to '+coll.name);
       } else if(data.chapters){
-        // Legacy: array of chapters — wrap in new collection
         const newColl=remapCollection({id:0,name:data.name||'Imported',icon:'ti-books',open:true,chapters:data.chapters});
         collections.push(newColl);
         activeCollId=newColl.id;
         activeChapterId=newColl.chapters[0]?.id;
         toast('Imported as new collection');
       } else if(data.blocks){
-        // Legacy: raw blocks — wrap in new chapter in active collection
         const coll=activeCollection()||collections[0];
         const newCh=remapChapter({id:0,name:data.name||'Imported',blocks:data.blocks,notes:''});
         coll.chapters.push(newCh);
@@ -2521,8 +2519,6 @@ function handleImport(e){
   reader.readAsText(file);e.target.value='';
 }
 function download(filename,content,mime){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download=filename;a.click();}
-
-// ── TXT Import ──
 function importTxt(){document.getElementById('txt-import-input').click();}
 function handleTxtImport(e){
   const file=e.target.files[0];if(!file)return;
@@ -2530,7 +2526,6 @@ function handleTxtImport(e){
   reader.onload=ev=>{
     const text=ev.target.result;
     const normalised=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
-    // Auto-detect: double-newline separated vs single-newline (one para per line)
     const doubleCount=(normalised.match(/\n\n+/g)||[]).length;
     let paragraphs=doubleCount>0
       ? normalised.split(/\n{2,}/)
@@ -2548,35 +2543,26 @@ function handleTxtImport(e){
 function classifyParagraph(p){
   const trimmed=p.trim();
   const stripped=trimmed.replace(/[*_]/g,'');
-
   // Thought: *wrapped in asterisks*, or thought-verb at sentence start
   const isItalicWrapped=/^\*[^*]+\*$/.test(trimmed)||/^_[^_]+_$/.test(trimmed);
   const quotedThought=/^\*["\u201C\u2018'"]/.test(trimmed)||/^\*I\s/i.test(trimmed);
   const thoughtVerbs=/^(she|he|they|i|we)\s+(thought|wondered|realized|realised|knew|felt|remembered|imagined|hoped|feared|believed|mused|reflected|supposed|considered)/i.test(stripped);
   if(isItalicWrapped||quotedThought||thoughtVerbs)return{type:'thought',text:p};
-
   // Scene: mostly caps and short, or chapter/act/etc keyword
   const upperRatio=(stripped.match(/[A-Z]/g)||[]).length/(stripped.replace(/\s/g,'').length||1);
   const isAllCaps=upperRatio>0.55&&stripped.length>3&&stripped.length<80;
   const isSceneMarker=/^(chapter|part|scene|act|section|prologue|epilogue|interlude|book)\b/i.test(stripped)||/^[\u2014\u2013#]{1,3}\s/.test(trimmed);
   if(isAllCaps||isSceneMarker)return{type:'scene',text:p};
-
   // Dialogue: starts with quote char, or ends with speech attribution
   // Straight " and curly quotes: \u201C\u201D left/right double, \u2018\u2019 left/right single
   const startsQuote=/^["\u201C\u201D\u2018\u2019'`]/.test(trimmed);
   const endsAttributed=/["\u201C\u201D\u2018\u2019'][,.]?\s+(said|asked|replied|whispered|shouted|called|laughed|muttered|cried|yelled|answered|demanded|returned|chuckled|smiled)\b/i.test(trimmed);
   const quoteDensity=(trimmed.match(/["\u201C\u201D\u2018\u2019']/g)||[]).length/trimmed.length;
   if(startsQuote||endsAttributed||(quoteDensity>0.05&&trimmed.length<220))return{type:'dialogue',text:p};
-
-  // Action: short, punchy, no mid-sentence punctuation sprawl
   const isShortPunch=stripped.length<=90&&/^[A-Z]/.test(stripped)&&(stripped.match(/,/g)||[]).length<=1;
   if(isShortPunch)return{type:'action',text:p};
-
-  // Default: prose
   return{type:'prose',text:p};
 }
-
-// ── Confirm popup ──
 let confirmCallback=null;
 function appConfirm(msg,label,onYes,anchorEl){
   const popup=document.getElementById('confirm-popup');
@@ -2592,7 +2578,6 @@ function appConfirm(msg,label,onYes,anchorEl){
     closeConfirm();
     if(typeof cb==='function') cb();
   };
-  // Position near anchor
   if(anchorEl){
     const r=anchorEl.getBoundingClientRect();
     const pw=200;
@@ -2618,8 +2603,6 @@ function closeConfirm(){
 }
 // Confirm button action is bound directly in appConfirm().
 // Global undo/redo/save — captured ahead of any element's own keydown handler
-// (including contenteditable blocks) so it always wins over native
-// per-field undo, which is unreliable for scripted DOM edits like bold/italic.
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&!e.altKey){
     const k=e.key.toLowerCase();
@@ -2637,15 +2620,12 @@ document.addEventListener('keydown',e=>{
 },true);
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
+    if(document.getElementById('search-overlay')?.classList.contains('open')){closeGlobalSearch();return;}
     if(wikilinkAcOpen()){hideWikilinkAC();return;}
     closeConfirm();
   }
 });
-
-// ── Toast ──
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
-
-// ── Close overlays ──
 document.addEventListener('click',e=>{
   const picker=document.getElementById('type-picker');
   if(!picker.contains(e.target))picker.classList.remove('open');
@@ -2658,86 +2638,62 @@ document.addEventListener('click',e=>{
   const wac=document.getElementById('wikilink-ac');
   if(!wac.contains(e.target)&&e.target!==acAnchorEl)hideWikilinkAC();
 });
-
-
-// ── Eyes ──
 (function(){
   const widget=document.getElementById('eye-widget');
   const pupils=[document.getElementById('ep1'),document.getElementById('ep2')];
   const glints=[document.getElementById('ep1g'),document.getElementById('ep2g')];
   const eyes=widget.querySelectorAll('.nw-eye');
-  // Eyes are side by side (row), each 28px wide + 5px gap = 61px total
-  // Widget height = 28px, so vertical centre offset = 14px
-  const EYE_H=28, EYE_GAP=5, WIDGET_H=EYE_H; // row layout
+  const EYE_H=28, EYE_GAP=5, WIDGET_H=EYE_H;
   const PUPIL_HOME={x:56,y:50}, PUPIL_RANGE=10;
   let hoverT=0;
   let blinkT=Date.now()+2000+Math.random()*4000;
   let isBlinking=false, blinkClose=false;
   let currentY=200;
-
   function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
-
   function getActiveBlockBottomY(){
-    // Target the lower portion of the active block — where writing happens
     const focused=document.querySelector('.block-wrap.block-focused,.block-wrap:focus-within');
     if(focused){
       const r=focused.getBoundingClientRect();
-      // Sit ~1.5 lines up from the bottom of the block (approx 28px)
       return r.bottom - 22;
     }
     const first=document.querySelector('.block-wrap');
     if(first){const r=first.getBoundingClientRect();return r.bottom-22;}
     return window.innerHeight*0.6;
   }
-
   function getEyeLeft(){
     const editor=document.getElementById('editor');
     if(!editor)return 10;
     const r=editor.getBoundingClientRect();
-    // Sit inside the 50px gutter, centred: gutter starts at r.left-50, eyes are ~61px wide
-    // Place so right edge of widget aligns with left edge of block content (~r.left-2)
     return Math.max(2, r.left - 26);
   }
-
   function frame(){
     if(!widget)return;
     if(widget.style.opacity==='0'){requestAnimationFrame(frame);return;}
-
     hoverT+=0.016;
     const hover=Math.sin(hoverT)*2.5;
-
-    // Smoothly follow active block bottom
     const ty=getActiveBlockBottomY()+hover;
     currentY+=(ty-currentY)*0.07;
-
-    // Position: left stays fixed to gutter, top tracks block bottom
     widget.style.left=getEyeLeft()+'px';
     const vert = (settings.eyeOrientation || 'vertical') === 'vertical';
     const verticalLift = vert ? 40 : 0;
     widget.style.top = (currentY - WIDGET_H/2 - verticalLift) + 'px';
-
-    // Gaze: always aimed right toward the text
     const lx=getEyeLeft();
     const gazeX=lx+220+Math.sin(hoverT*0.35)*25;
     const gazeY=currentY+Math.cos(hoverT*0.28)*12;
-
-    // Blink: scaleY on each individual SVG (they are horizontal, scaleY=vertical close)
     const now=Date.now();
     if(now>blinkT&&!isBlinking){
       isBlinking=true;
       blinkClose=true;
-      blinkT=now+100+Math.random()*70; // close duration
+      blinkT=now+100+Math.random()*70;
     }
     if(isBlinking&&blinkClose&&now>blinkT){
       blinkClose=false;
-      blinkT=now+80+Math.random()*60; // open again
+      blinkT=now+80+Math.random()*60;
     }
     if(isBlinking&&!blinkClose&&now>blinkT){
       isBlinking=false;
-      // Occasional double-blink
       blinkT=now+(Math.random()<0.18 ? 150+Math.random()*100 : 2500+Math.random()*4000);
     }
-
     eyes.forEach((eye,idx)=>{
       const pupil=pupils[idx];
       const glint=glints[idx];
@@ -2758,10 +2714,8 @@ document.addEventListener('click',e=>{
         glint.setAttribute('cx',px+4); glint.setAttribute('cy',py-4);
       }
     });
-
     requestAnimationFrame(frame);
   }
-
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       init();
