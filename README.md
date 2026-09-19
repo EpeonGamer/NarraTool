@@ -12,6 +12,8 @@ A fast, lightweight, distraction-free local studio for fiction writers and world
 * **Local Storage & Auto-Backup:** Runs locally in the browser using IndexedDB / LocalStorage with direct mirroring to a local `.json` backup file via the File System Access API.
 * **Exporting & Workers:** Background web workers handle real-time full-text search and export text compilation.
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/D7W427A51H)
+
 ---
 
 ## Getting Started & Setup
