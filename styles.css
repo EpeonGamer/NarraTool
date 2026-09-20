@@ -592,7 +592,7 @@
 }
 body.typewriter-mode #topbar{opacity:.82}
 /* Extra bottom (and light top) padding so the caret can sit near vertical
-   center even when editing the last few blocks — classic typewriter scroll. */
+   center even when editing the last few blocks; classic typewriter scroll. */
 body.typewriter-mode #writing-area{
   scroll-behavior:smooth;
   padding-top:max(2rem,28vh);

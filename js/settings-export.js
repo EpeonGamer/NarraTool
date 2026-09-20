@@ -106,8 +106,8 @@ function blocksToTxt(chapters,imgMap){
   return chapters.map(ch=>{
     const h='─── '+ch.name+' ───';
     const body=ch.blocks.map(b=>{
-      if(b.type==='scene')return'\n\u2014 '+b.text.toUpperCase()+' \u2014\n';
-      if(b.type==='image')return'[Image: images/'+(imgMap&&imgMap[b.id]?imgMap[b.id]:'?')+(b.caption?' \u2014 '+b.caption:'')+']';
+      if(b.type==='scene')return'\n- '+b.text.toUpperCase()+' -\n';
+      if(b.type==='image')return'[Image: images/'+(imgMap&&imgMap[b.id]?imgMap[b.id]:'?')+(b.caption?' - '+b.caption:'')+']';
       if(b.type==='group'){const lvl=b.level||0;return'\n'+'#'.repeat(lvl+1)+' '+(b.name||'Group')+'\n';}
       if(b.type==='custom')return'['+(b.label||'Custom')+'] '+(b.text||'');
       return b.text||'';
@@ -153,7 +153,7 @@ async function doExport(format){
     return;
   }
   if(format==='zip'){
-    if(typeof JSZip==='undefined'){toast('JSZip not loaded \u2014 check internet connection');return;}
+    if(typeof JSZip==='undefined'){toast('JSZip not loaded - check internet connection');return;}
     try{
       const zip=new JSZip();
       const imgFolder=zip.folder('images');
@@ -280,7 +280,7 @@ function classifyParagraph(p){
   // Scene: mostly caps and short, or chapter/act/etc keyword
   const upperRatio=(stripped.match(/[A-Z]/g)||[]).length/(stripped.replace(/\s/g,'').length||1);
   const isAllCaps=upperRatio>0.55&&stripped.length>3&&stripped.length<80;
-  const isSceneMarker=/^(chapter|part|scene|act|section|prologue|epilogue|interlude|book)\b/i.test(stripped)||/^[\u2014\u2013#]{1,3}\s/.test(trimmed);
+  const isSceneMarker=/^(chapter|part|scene|act|section|prologue|epilogue|interlude|book)\b/i.test(stripped)||/^[-#\u2014\u2013]{1,3}\s/.test(trimmed);
   if(isAllCaps||isSceneMarker)return{type:'scene',text:p};
   // Dialogue: starts with quote char, or ends with speech attribution
   // Straight " and curly quotes: \u201C\u201D left/right double, \u2018\u2019 left/right single

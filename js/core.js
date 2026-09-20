@@ -117,7 +117,7 @@ function updateSaveStatusUI(){
   const dot=document.getElementById('save-status-dot');
   if(dot){
     dot.classList.toggle('stale',saveStatus==='stale');
-    dot.title=saveStatus==='stale'?'Unsaved changes \u2014 Ctrl+S to save now':'All changes saved';
+    dot.title=saveStatus==='stale'?'Unsaved changes - Ctrl+S to save now':'All changes saved';
   }
   applyBackupTitle();
 }
@@ -125,13 +125,13 @@ function manualSave(){
   clearTimeout(saveTimer);
   save();
   if(!localBackupSupported){
-    toast('Saved in this browser \u2014 no local file backup available here. Export a .json now and then to be safe.');
+    toast('Saved in this browser - no local file backup available here. Export a .json now and then to be safe.');
   }else if(localBackupStatus==='connected'){
-    toast('Saved \u2014 mirroring to local file');
+    toast('Saved - mirroring to local file');
   }else if(localBackupStatus==='reconnect'){
-    toast('Saved in this browser \u2014 reconnect the backup file to mirror to disk');
+    toast('Saved in this browser - reconnect the backup file to mirror to disk');
   }else{
-    toast('Saved in this browser \u2014 no local backup file connected');
+    toast('Saved in this browser - no local backup file connected');
   }
 }
 const localBackupSupported=!!(window.showSaveFilePicker);
@@ -287,7 +287,7 @@ async function connectLocalBackup(){
     await idbSet('project-file',handle);
     localBackupStatus='connected';updateBackupUI();
     await mirrorToLocalFile();
-    toast('Local backup connected \u2014 changes will mirror to this file');
+    toast('Local backup connected - changes will mirror to this file');
   }catch(e){
     if(e.name!=='AbortError'){toast('Could not connect a backup file');console.error(e);}
   }
@@ -301,7 +301,7 @@ async function reconnectLocalBackup(){
       await mirrorToLocalFile();
       toast('Local backup reconnected');
     }else{
-      toast('Permission was not granted \u2014 backup file stays disconnected');
+      toast('Permission was not granted - backup file stays disconnected');
     }
   }catch(e){toast('Could not reconnect the backup file');console.error(e);}
 }
@@ -327,7 +327,7 @@ async function mirrorToLocalFile(){
   }catch(e){
     console.error('Local backup write failed',e);
     localBackupStatus='reconnect';updateBackupUI();
-    toast('Local backup write failed \u2014 reconnect needed');
+    toast('Local backup write failed - reconnect needed');
   }finally{
     localBackupWriting=false;
     if(localBackupPending){localBackupPending=false;mirrorToLocalFile();}
@@ -368,12 +368,12 @@ function updateBackupUI(){
 function applyBackupTitle(){
   const btn=document.getElementById('backup-status-btn');
   if(!btn||!backupBaseTitle)return;
-  const suffix=saveStatus==='stale'?' \u2014 unsaved changes':' \u2014 all changes saved';
+  const suffix=saveStatus==='stale'?' - unsaved changes':' - all changes saved';
   btn.title=backupBaseTitle+suffix;
 }
 function handleBackupClick(){
   if(localBackupStatus==='unsupported'){
-    toast('Auto-backup isn\u2019t available here \u2014 exporting .json instead');
+    toast('Auto-backup isn\u2019t available here - exporting .json instead');
     setExportScope('all');doExport('json');return;
   }
   if(localBackupStatus==='disconnected')return connectLocalBackup();
