@@ -100,7 +100,7 @@ function save(){
 }
 function scheduleSave(){
   clearTimeout(saveTimer);saveTimer=setTimeout(save,800);
-  if(!localBackupSupported)editsSinceExport++;
+  if(localBackupStatus!=='connected')editsSinceExport++;
   markStale();
 }
 let saveStatus='saved';
@@ -265,7 +265,7 @@ async function initLocalBackup(){
     localBackupHandle=handle;
     const perm=await handle.queryPermission({mode:'readwrite'});
     if(perm==='granted'){
-      localBackupStatus='connected';updateBackupUI();
+      localBackupStatus='connected';updateBackupUI();clearBackupNudge();
       mirrorToLocalFile();
     }else{
       localBackupStatus='reconnect';updateBackupUI();
@@ -285,7 +285,7 @@ async function connectLocalBackup(){
     });
     localBackupHandle=handle;
     await idbSet('project-file',handle);
-    localBackupStatus='connected';updateBackupUI();
+    localBackupStatus='connected';updateBackupUI();clearBackupNudge();
     await mirrorToLocalFile();
     toast('Local backup connected - changes will mirror to this file');
   }catch(e){
@@ -297,7 +297,7 @@ async function reconnectLocalBackup(){
   try{
     const perm=await localBackupHandle.requestPermission({mode:'readwrite'});
     if(perm==='granted'){
-      localBackupStatus='connected';updateBackupUI();
+      localBackupStatus='connected';updateBackupUI();clearBackupNudge();
       await mirrorToLocalFile();
       toast('Local backup reconnected');
     }else{
@@ -381,13 +381,13 @@ function handleBackupClick(){
   if(localBackupStatus==='connected')return disconnectLocalBackup();
 }
 let editsSinceExport=0,nudgeDismissedThisSession=false,backupNudgeTimer=null;
-const NUDGE_CHECK_MS=60*1000,NUDGE_IDLE_THRESHOLD_MS=15*60*1000,NUDGE_MIN_EDITS=8;
+const NUDGE_CHECK_MS=60*1000,NUDGE_IDLE_THRESHOLD_MS=20*60*1000,NUDGE_MIN_EDITS=20;
 function startBackupNudgeWatcher(){
-  if(localBackupSupported)return;
   backupNudgeTimer=setInterval(checkBackupNudge,NUDGE_CHECK_MS);
 }
 function checkBackupNudge(){
   if(nudgeDismissedThisSession)return;
+  if(localBackupStatus==='connected')return;
   const el=document.getElementById('backup-nudge');
   if(el.classList.contains('show'))return;
   const last=parseInt(localStorage.getItem('nw-last-export-at')||'0',10);
@@ -399,6 +399,10 @@ function dismissBackupNudge(remindLater){
   document.getElementById('backup-nudge').classList.remove('show');
   if(remindLater){editsSinceExport=0;}
   else{nudgeDismissedThisSession=true;}
+}
+function clearBackupNudge(){
+  document.getElementById('backup-nudge')?.classList.remove('show');
+  editsSinceExport=0;
 }
 function exportFromNudge(){
   dismissBackupNudge(false);
