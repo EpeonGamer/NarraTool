@@ -130,6 +130,8 @@ function manualSave(){
     toast('Saved - mirroring to local file');
   }else if(localBackupStatus==='reconnect'){
     toast('Saved in this browser - reconnect the backup file to mirror to disk');
+  }else if(localBackupStatus==='missing'){
+    toast('Saved in this browser - backup file not found, click the backup button to choose it again');
   }else{
     toast('Saved in this browser - no local backup file connected');
   }
@@ -145,7 +147,23 @@ function idbOpen(){
     req.onupgradeneeded=()=>{req.result.createObjectStore(NW_IDB_STORE);};
     req.onsuccess=()=>resolve(req.result);
     req.onerror=()=>reject(req.error);
+    req.onblocked=()=>reject(new Error('IndexedDB open blocked'));
   });
+}
+const BACKUP_CHECK_TIMEOUT_MS=5000;
+function withTimeout(promise,ms,what){
+  return new Promise((resolve,reject)=>{
+    const t=setTimeout(()=>{const e=new Error('Timed out '+what);e.name='TimeoutError';reject(e);},ms);
+    promise.then(v=>{clearTimeout(t);resolve(v);},e=>{clearTimeout(t);reject(e);});
+  });
+}
+async function backupFileExists(handle){
+  try{await handle.getFile();return true;}
+  catch(e){if(e&&e.name==='NotFoundError')return false;throw e;}
+}
+function markBackupMissing(){
+  localBackupStatus='missing';updateBackupUI();
+  toast('Backup file not found - it may have been moved. Click the backup button to choose it again.');
 }
 async function idbSet(key,val){
   const db=await idbOpen();
@@ -260,11 +278,13 @@ async function loadProjectData(){
 async function initLocalBackup(){
   if(!localBackupSupported){updateBackupUI();return;}
   try{
-    const handle=await idbGet('project-file');
+    const handle=await withTimeout(idbGet('project-file'),BACKUP_CHECK_TIMEOUT_MS,'reading the saved backup file');
     if(!handle){localBackupStatus='disconnected';updateBackupUI();return;}
     localBackupHandle=handle;
-    const perm=await handle.queryPermission({mode:'readwrite'});
+    const perm=await withTimeout(handle.queryPermission({mode:'readwrite'}),BACKUP_CHECK_TIMEOUT_MS,'checking backup permission');
     if(perm==='granted'){
+      const exists=await withTimeout(backupFileExists(handle),BACKUP_CHECK_TIMEOUT_MS,'checking the backup file');
+      if(!exists){markBackupMissing();return;}
       localBackupStatus='connected';updateBackupUI();clearBackupNudge();
       mirrorToLocalFile();
     }else{
@@ -272,7 +292,8 @@ async function initLocalBackup(){
     }
   }catch(e){
     console.error('Local backup init failed',e);
-    localBackupStatus='disconnected';updateBackupUI();
+    if(localBackupHandle)markBackupMissing();
+    else{localBackupStatus='disconnected';updateBackupUI();}
   }
 }
 async function connectLocalBackup(){
@@ -297,13 +318,18 @@ async function reconnectLocalBackup(){
   try{
     const perm=await localBackupHandle.requestPermission({mode:'readwrite'});
     if(perm==='granted'){
+      if(!(await backupFileExists(localBackupHandle))){markBackupMissing();return;}
       localBackupStatus='connected';updateBackupUI();clearBackupNudge();
       await mirrorToLocalFile();
-      toast('Local backup reconnected');
+      if(localBackupStatus==='connected')toast('Local backup reconnected');
     }else{
       toast('Permission was not granted - backup file stays disconnected');
     }
-  }catch(e){toast('Could not reconnect the backup file');console.error(e);}
+  }catch(e){
+    console.error(e);
+    if(e&&e.name==='NotFoundError')markBackupMissing();
+    else toast('Could not reconnect the backup file');
+  }
 }
 function disconnectLocalBackup(){
   appConfirm('Stop mirroring writes to the local backup file? Your work stays saved in this browser either way.','Disconnect',async()=>{
@@ -326,8 +352,11 @@ async function mirrorToLocalFile(){
     await writable.close();
   }catch(e){
     console.error('Local backup write failed',e);
-    localBackupStatus='reconnect';updateBackupUI();
-    toast('Local backup write failed - reconnect needed');
+    if(e&&e.name==='NotFoundError'){markBackupMissing();}
+    else{
+      localBackupStatus='reconnect';updateBackupUI();
+      toast('Local backup write failed - reconnect needed');
+    }
   }finally{
     localBackupWriting=false;
     if(localBackupPending){localBackupPending=false;mirrorToLocalFile();}
@@ -357,6 +386,11 @@ function updateBackupUI(){
     icon.className='ti ti-alert-triangle';
     label.textContent='Reconnect backup file';
     backupBaseTitle='Your browser needs a fresh click to re-grant write access to the backup file this session.';
+  }else if(localBackupStatus==='missing'){
+    btn.classList.add('b-reconnect');
+    icon.className='ti ti-alert-triangle';
+    label.textContent='Backup file missing';
+    backupBaseTitle='The backup file could not be found (moved, renamed or deleted). Click to choose its new location.';
   }else if(localBackupStatus==='connected'){
     btn.classList.add('b-connected');
     icon.className='ti ti-circle-check-filled';
@@ -376,7 +410,7 @@ function handleBackupClick(){
     toast('Auto-backup isn\u2019t available here - exporting .json instead');
     setExportScope('all');doExport('json');return;
   }
-  if(localBackupStatus==='disconnected')return connectLocalBackup();
+  if(localBackupStatus==='disconnected'||localBackupStatus==='missing'||localBackupStatus==='checking')return connectLocalBackup();
   if(localBackupStatus==='reconnect')return reconnectLocalBackup();
   if(localBackupStatus==='connected')return disconnectLocalBackup();
 }
